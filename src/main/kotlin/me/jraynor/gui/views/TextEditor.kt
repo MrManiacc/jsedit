@@ -10,7 +10,10 @@ import me.jraynor.gui.SourceCodePro
 import me.jraynor.gui.Viewport
 import me.jraynor.os.disk.File
 import me.jraynor.os.OperatingSystem
+import me.jraynor.os.event.Events
+import org.graalvm.polyglot.PolyglotException
 import java.nio.charset.Charset
+import java.util.concurrent.TimeoutException
 
 class TextEditor(override val os: OperatingSystem, private var file: File) : Viewport {
 
@@ -42,7 +45,27 @@ class TextEditor(override val os: OperatingSystem, private var file: File) : Vie
         ImGui.pushStyleVar(ImGuiStyleVar.FramePadding, 6f, 3f)
         if (ImGui.button("${Codicon.ICON_RUN}")) {
             file.content = editor.text.toByteArray()
-            editor.setErrorMarkers(os.execute(file))
+            val result = os.execute(file)
+            if (result is PolyglotException) {
+                val lineNumber = if (result.sourceLocation == null)
+                    result.polyglotStackTrace.firstOrNull()?.sourceLocation?.startLine ?: 1
+                else
+                    result.sourceLocation.startLine
+                editor.setErrorMarkers(hashMapOf(lineNumber to result.message))
+            } else if (result is TimeoutException) {
+                val lineNumber = result.stackTrace.firstOrNull()?.lineNumber ?: 1
+                os.post(
+                    Events.Console.Log(
+                        "TimeoutException: ${result.message}",
+                        Events.Console.Level.ERROR,
+                        true,
+                        null
+                    )
+                )
+                editor.setErrorMarkers(hashMapOf(lineNumber to result.message))
+            } else {
+                editor.setErrorMarkers(hashMapOf())
+            }
         }
         ImGui.sameLine()
         if (ImGui.button("${Codicon.ICON_SAVE}")) {

@@ -23,14 +23,12 @@ class Console(override val os: OperatingSystem) : Viewport {
         ImGui.pushFont(SourceCodePro.getFont())
         if (ImGui.beginChild("Output", 0f, -ImGui.getFrameHeightWithSpacing())) {
             ImGui.indent()
-
             os.getOutput().forEach {
                 textWithColors(it)
             }
             ImGui.unindent()
-            if (os.updated) {
+            if (os.isDirty()) {
                 ImGui.setScrollHereY(1.0f) // Auto scroll to the bottom
-                os.updated = false
             }
         }
         ImGui.endChild()
@@ -43,7 +41,7 @@ class Console(override val os: OperatingSystem) : Viewport {
         }
         ImGui.pushItemWidth(ImGui.getContentRegionAvailX())
         if (ImGui.inputText("##Command", command, ImGuiInputTextFlags.EnterReturnsTrue)) {
-            os.runCommand(command.get())
+            os.execute(command.get())
             needsFocus = true
             command.set("")
         }

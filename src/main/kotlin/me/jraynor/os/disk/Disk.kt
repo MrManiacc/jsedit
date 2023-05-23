@@ -117,6 +117,7 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSyste
 
     // Find a file at a given path.
     fun findFile(path: String): File? {
+        val path = if(path.contains("\\")) path.replace("\\", "/") else path
         val parts = path.split("/").filter { it.isNotEmpty() }
         var currentFolder: Folder = root
 
