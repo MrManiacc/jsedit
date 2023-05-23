@@ -28,7 +28,6 @@ class Window(private val os: OperatingSystem, private val renderer: IRenderer, p
 
 
     override fun process() {
-        os.update()
         renderer.render()
     }
 }

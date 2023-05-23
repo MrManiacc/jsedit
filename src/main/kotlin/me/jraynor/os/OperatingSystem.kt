@@ -21,18 +21,11 @@ class OperatingSystem(val disk: Disk, val view: Dockspace) {
     private var updated = false
     private val vm = VirtualMachine(this)
     private var running = true
-    private val tasks: MutableMap<String, Runner> = ConcurrentHashMap()
     private val bus: EventBus = EventBus().apply { register(this@OperatingSystem) }
     fun subscribe(any: Any) =
         bus.register(any)
 
     fun post(any: Any) = bus.post(any)
-
-
-    internal fun update() {
-        for (update in tasks.values) update.execute(System.currentTimeMillis() / 1000f)
-    }
-
 
     fun load(name: String = "os.dat") {
         DiskIO.load(name, disk)
