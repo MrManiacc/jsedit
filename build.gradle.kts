@@ -24,7 +24,7 @@ dependencies {
     implementation("org.graalvm.sdk:graal-sdk:22.3.2")
     implementation("org.graalvm.js:js:22.3.2")
     implementation("commons-io:commons-io:2.12.0")
-
+    implementation("org.apache.commons:commons-compress:1.23.0")
 
 }
 

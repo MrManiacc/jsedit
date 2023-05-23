@@ -1,7 +1,5 @@
 package me.jraynor.os
 
-import com.oracle.truffle.api.source.Source
-import com.oracle.truffle.api.source.Source.SourceBuilder
 import me.jraynor.os.disk.Disk
 import me.jraynor.os.disk.File
 import me.jraynor.os.vm.parser.LuaBaseListener
@@ -73,32 +71,35 @@ class VirtualMachine(private val os: OperatingSystem) {
 
     fun execute(source: String): Map<Int, String> {
         executeJavScript(source)
+
         return emptyMap()
-        javaClass
-        val vm = LuaJit().apply {
-            openLibraries()
-            setExternalLoader(externalLoader)
-            pushJavaObject(os)
-            setGlobal("os")
-            run("sys = require('sys')")
-        }
-
-
-        val parsed = parseForErrors(source).toMutableMap()
-        if (parsed.isEmpty()) {
-            if (vm.run(source) != Lua.LuaError.OK) {
-                val error = vm.get().toJavaObject() as String
-                parsed[1] = "Runtime error: $error"
-            }
-        }
-        vm.close()
-        return parsed
+//        javaClass
+//        val vm = LuaJit().apply {
+//            openLibraries()
+//            setExternalLoader(externalLoader)
+//            pushJavaObject(os)
+//            setGlobal("os")
+//            run("sys = require('sys')")
+//        }
+//
+//
+//        val parsed = parseForErrors(source).toMutableMap()
+//        if (parsed.isEmpty()) {
+//            if (vm.run(source) != Lua.LuaError.OK) {
+//                val error = vm.get().toJavaObject() as String
+//                parsed[1] = "Runtime error: $error"
+//            }
+//        }
+//        vm.close()
+//        return parsed
     }
 
     private fun executeJavScript(source: String) {
         try {
             val context = Context.newBuilder("js").fileSystem(configureBuilder())
-                .allowHostAccess(HostAccess.newBuilder(HostAccess.EXPLICIT).build())
+//                .allowHostAccess(HostAccess.newBuilder(HostAccess.EXPLICIT).build())
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup { true }
                 .allowIO(true)
                 .build()
 
