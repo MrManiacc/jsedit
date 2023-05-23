@@ -26,85 +26,28 @@ import java.nio.file.attribute.FileAttribute
 import java.util.concurrent.atomic.AtomicInteger
 
 
-class VirtualMachine(private val os: OperatingSystem) {
-    private val externalLoader = LuaLoader(os.disk)
+class
+VirtualMachine(private val os: OperatingSystem) {
 
-
-    private fun parseForErrors(source: String): Map<Int, String> {
-        val lexer = LuaLexer(CharStreams.fromString(source))
-        val lineCount = source.count { it == '\n' }
-        val firstLineNotEmpty = source.lines().indexOfFirst { it.trim().isNotEmpty() } + 1
-        lexer.removeErrorListeners()
-        val parser = LuaParser(CommonTokenStream(lexer))
-        parser.removeErrorListeners()
-        parser.errorHandler = DefaultErrorStrategy()
-        val errors = HashMap<Int, String>()
-        parser.addErrorListener(object : BaseErrorListener() {
-            override fun syntaxError(
-                recognizer: Recognizer<*, *>?, offendingSymbol: Any,
-                line: Int, charPositionInLine: Int, msg: String, e: RecognitionException?
-            ) {
-                if (line > lineCount) {
-                    errors[firstLineNotEmpty] = msg
-                } else
-                    errors[line] = msg
-            }
-        })
-        ParseTreeWalker().walk(object : LuaBaseListener() {
-            val brackets: AtomicInteger = AtomicInteger(0);
-
-            override fun enterEveryRule(ctx: ParserRuleContext) {
-                super.enterEveryRule(ctx);
-                brackets.incrementAndGet();
-            }
-
-            override fun exitEveryRule(ctx: ParserRuleContext) {
-                super.exitEveryRule(ctx);
-                if (ctx.exception == null) {
-                    brackets.decrementAndGet();
-                }
-            }
-        }, parser.chunk())
-        return errors
-
-    }
 
     fun execute(source: String): Map<Int, String> {
         executeJavScript(source)
 
         return emptyMap()
-//        javaClass
-//        val vm = LuaJit().apply {
-//            openLibraries()
-//            setExternalLoader(externalLoader)
-//            pushJavaObject(os)
-//            setGlobal("os")
-//            run("sys = require('sys')")
-//        }
-//
-//
-//        val parsed = parseForErrors(source).toMutableMap()
-//        if (parsed.isEmpty()) {
-//            if (vm.run(source) != Lua.LuaError.OK) {
-//                val error = vm.get().toJavaObject() as String
-//                parsed[1] = "Runtime error: $error"
-//            }
-//        }
-//        vm.close()
-//        return parsed
+
     }
 
     private fun executeJavScript(source: String) {
         try {
             val context = Context.newBuilder("js").fileSystem(configureBuilder())
-//                .allowHostAccess(HostAccess.newBuilder(HostAccess.EXPLICIT).build())
-                .allowHostAccess(HostAccess.ALL)
+                .allowHostAccess(HostAccess.newBuilder(HostAccess.ALL).build())
+//                .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup { true }
                 .allowIO(true)
                 .build()
 
             context.getBindings("js").putMember("os", os)
-            context.eval(org.graalvm.polyglot.Source.newBuilder("js", source, "main.jsm").build())
+            context.eval(org.graalvm.polyglot.Source.newBuilder("js", source, "main.jsm").mimeType("application/javascript+module").build())
         } catch (e: Exception) {
             e.printStackTrace()
         }
