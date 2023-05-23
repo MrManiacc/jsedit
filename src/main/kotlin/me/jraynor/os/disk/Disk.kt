@@ -1,10 +1,16 @@
 package me.jraynor.os.disk
 
+import org.apache.commons.compress.utils.SeekableInMemoryByteChannel
+import org.graalvm.polyglot.io.FileSystem
+import java.net.URI
+import java.nio.channels.SeekableByteChannel
+import java.nio.file.*
+import java.nio.file.attribute.FileAttribute
 import java.time.LocalDateTime
 
 
 // VirtualDisk class to represent the filesystem.
-class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) {
+class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSystem {
     // Create the home folder for a given user.
     fun getHomeFolder(user: User): Folder {
         return getOrCreateFolder("/home/${user.username}", user)
@@ -311,5 +317,62 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) {
         olderParent?.content?.remove(folder)
         target?.content?.add(folder)
         return true
+    }
+
+    override fun parsePath(uri: URI): Path {
+        return Path.of(uri)
+    }
+
+    override fun parsePath(path: String): Path {
+        return Path.of(path)
+    }
+
+    override fun checkAccess(path: Path?, modes: MutableSet<out AccessMode>?, vararg linkOptions: LinkOption?) {
+    }
+
+
+    override fun createDirectory(dir: Path, vararg attrs: FileAttribute<*>?) {
+        createFolder(User("root", Role.ADMIN), dir.toString())
+    }
+
+    override fun delete(path: Path) {
+        deleteFile(User("root", Role.ADMIN), path.toString())
+    }
+
+    override fun newByteChannel(
+        path: Path?,
+        options: MutableSet<out OpenOption>?,
+        vararg attrs: FileAttribute<*>?
+    ): SeekableByteChannel {
+        return SeekableInMemoryByteChannel(findFile(path.toString())?.content)
+    }
+
+    override fun newDirectoryStream(dir: Path, filter: DirectoryStream.Filter<in Path>): DirectoryStream<Path> {
+        val folders = findFolder(dir.toString())?.content?.filterIsInstance<Folder>() ?: emptyList()
+        val iterator = folders.map { Path.of(URI.create("$dir/${it.name}")) }.toMutableList().iterator()
+        return object : DirectoryStream<Path> {
+            override fun iterator(): MutableIterator<Path> {
+                return iterator
+            }
+
+            override fun close() {
+            }
+        }
+    }
+
+    override fun toAbsolutePath(path: Path?): Path {
+        return path!!
+    }
+
+    override fun toRealPath(path: Path?, vararg linkOptions: LinkOption?): Path {
+        return path!!
+    }
+
+    override fun readAttributes(
+        path: Path?,
+        attributes: String?,
+        vararg options: LinkOption?
+    ): MutableMap<String, Any> {
+        return mutableMapOf()
     }
 }

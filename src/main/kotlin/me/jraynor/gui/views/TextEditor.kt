@@ -17,7 +17,7 @@ class TextEditor(override val os: OperatingSystem, private var file: File) : Vie
     override val name: String = "${file.name} ${Codicon.ICON_FILE_TEXT}"
 
     private val editor = TextEditor().apply {
-        setLanguageDefinition(TextEditorLanguageDefinition.lua())
+        setLanguageDefinition(TextEditorLanguageDefinition.c())
         setShowWhitespaces(false)
         text = String(file.content, Charset.defaultCharset())
     }

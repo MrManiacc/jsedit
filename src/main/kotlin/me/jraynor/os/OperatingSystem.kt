@@ -2,6 +2,7 @@ package me.jraynor.os
 
 import me.jraynor.gui.Dockspace
 import me.jraynor.os.disk.*
+import org.graalvm.polyglot.HostAccess.Export
 import org.luaj.vm2.LuaError
 
 class OperatingSystem(val disk: Disk, val view: Dockspace) {
@@ -35,9 +36,16 @@ class OperatingSystem(val disk: Disk, val view: Dockspace) {
     fun save(name: String = "os.dat") {
         DiskIO.save(disk, name)
     }
+    @Export
+    fun callback(runnable: Runnable) {
+        runnable.run()
+    }
 
-    fun addOutput(string: String) {
-        output.add(string)
+    @Export
+    fun log(string: String, vararg args: Any) {
+        val formattedDateTime: String =
+            java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+        output.add("[$formattedDateTime] $string")
     }
 
     fun getOutput(): List<String> {

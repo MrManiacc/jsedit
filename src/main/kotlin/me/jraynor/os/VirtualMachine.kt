@@ -1,21 +1,30 @@
 package me.jraynor.os
 
+import com.oracle.truffle.api.source.Source
+import com.oracle.truffle.api.source.Source.SourceBuilder
 import me.jraynor.os.disk.Disk
 import me.jraynor.os.disk.File
 import me.jraynor.os.vm.parser.LuaBaseListener
 import me.jraynor.os.vm.parser.LuaLexer
 import me.jraynor.os.vm.parser.LuaParser
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.atn.PredictionMode
 import org.antlr.v4.runtime.tree.ParseTreeWalker
+import org.apache.commons.compress.utils.SeekableInMemoryByteChannel
+import org.graalvm.polyglot.Context
+import org.graalvm.polyglot.HostAccess
+import org.graalvm.polyglot.io.FileSystem
 import party.iroiro.luajava.ClassPathLoader
 import party.iroiro.luajava.ExternalLoader
-import party.iroiro.luajava.JFunction
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.luajit.LuaJit
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.net.URI
 import java.nio.Buffer
 import java.nio.ByteBuffer
+import java.nio.channels.SeekableByteChannel
+import java.nio.file.*
+import java.nio.file.attribute.FileAttribute
 import java.util.concurrent.atomic.AtomicInteger
 
 
@@ -63,6 +72,8 @@ class VirtualMachine(private val os: OperatingSystem) {
     }
 
     fun execute(source: String): Map<Int, String> {
+        executeJavScript(source)
+        return emptyMap()
         javaClass
         val vm = LuaJit().apply {
             openLibraries()
@@ -82,6 +93,94 @@ class VirtualMachine(private val os: OperatingSystem) {
         }
         vm.close()
         return parsed
+    }
+
+    private fun executeJavScript(source: String) {
+        try {
+            val context = Context.newBuilder("js").fileSystem(configureBuilder())
+                .allowHostAccess(HostAccess.newBuilder(HostAccess.EXPLICIT).build())
+                .allowIO(true)
+                .build()
+
+            context.getBindings("js").putMember("os", os)
+            context.eval(org.graalvm.polyglot.Source.newBuilder("js", source, "main.jsm").build())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun configureBuilder(): FileSystem {
+        return object : FileSystem {
+            override fun parsePath(uri: URI): Path? {
+                return Paths.get(uri)
+            }
+
+            override fun parsePath(path: String): Path {
+                return Paths.get(path)
+            }
+
+            override fun checkAccess(path: Path?, modes: MutableSet<out AccessMode>?, vararg linkOptions: LinkOption?) {
+
+            }
+
+            override fun createDirectory(dir: Path?, vararg attrs: FileAttribute<*>?) {
+            }
+
+            override fun delete(path: Path?) {
+
+            }
+
+            @Throws(IOException::class)
+            override fun newByteChannel(
+                path: Path,
+                options: Set<OpenOption?>?,
+                vararg attrs: FileAttribute<*>?
+            ): SeekableByteChannel? {
+                val file = os.disk.findFile(path.toString()) ?: return null
+                return SeekableInMemoryByteChannel(file.content)
+            }
+
+            override fun newDirectoryStream(
+                dir: Path?,
+                filter: DirectoryStream.Filter<in Path>?
+            ): DirectoryStream<Path> {
+                return object : DirectoryStream<Path> {
+                    override fun iterator(): MutableIterator<Path> {
+                        return object : MutableIterator<Path> {
+                            override fun hasNext(): Boolean {
+                                return false
+                            }
+
+                            override fun next(): Path {
+                                return Paths.get("")
+                            }
+
+                            override fun remove() {
+                            }
+                        }
+                    }
+
+                    override fun close() {
+                    }
+                }
+            }
+
+            override fun toAbsolutePath(path: Path): Path {
+                return path
+            }
+
+            override fun toRealPath(path: Path?, vararg linkOptions: LinkOption?): Path {
+                return path!!
+            }
+
+            override fun readAttributes(
+                path: Path?,
+                attributes: String?,
+                vararg options: LinkOption?
+            ): MutableMap<String, Any> {
+                return mutableMapOf()
+            }
+        }
     }
 
     fun execute(file: File) = execute(String(file.content))
