@@ -70,3 +70,6 @@ For any queries, feel free to reach us at:
 - Discord *(best contact)* - `dooZyz#4822`
 - Email - `jamess.raynorr@gmail.com`
 
+## Showcase
+
+![JSEdit](assets/editor.png)

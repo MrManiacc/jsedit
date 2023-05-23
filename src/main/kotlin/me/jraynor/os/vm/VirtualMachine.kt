@@ -2,6 +2,7 @@ package me.jraynor.os.vm
 
 import me.jraynor.os.OperatingSystem
 import org.graalvm.polyglot.*
+import org.graalvm.polyglot.proxy.ProxyExecutable
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -29,22 +30,34 @@ class VirtualMachine(
 
     private fun finalizeContext(context: Context.Builder): Context {
         sandbox.build(context)
+            .allowExperimentalOptions(true)
             .allowIO(true)
             .fileSystem(VmFileSystem(os))
             .allowHostAccess(HostAccess.ALL)
-            .allowExperimentalOptions(true)
         return context.build()
     }
 
 
     private fun configureEnvironment(bindings: Value) {
         bindings.putMember("os", os)
+        bindings.putMember("require", ProxyExecutable { args -> require(args[0].asString()) })
     }
 
+    private fun require(path: String): Value {
+        val context = buildContext()
+        val file = os.disk.findFile(path)
+        if (file == null) {
+            context.close()
+            throw RuntimeException("File not found: $path")
+        }
+
+        val result = context.eval(Source.newBuilder("js", String(file.content), "<require>").build())
+        context.close()
+        return result
+    }
 
     fun execute(source: Source): Throwable? {
         val context = buildContext()
-
         try {
             context.eval(source)
         } catch (e: PolyglotException) {
