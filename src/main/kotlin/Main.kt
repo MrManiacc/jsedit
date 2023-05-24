@@ -5,8 +5,8 @@ import me.jraynor.gui.elements.DiskExplorerElement
 import me.jraynor.gui.elements.DockspaceElement
 import me.jraynor.gui.helpers.*
 import me.jraynor.os.OperatingSystem
-import me.jraynor.os.io.Disk
-import me.jraynor.os.io.DiskIO
+import me.jraynor.io.Disk
+import me.jraynor.io.DiskIO
 import java.io.File
 
 fun main(args: Array<String>) {

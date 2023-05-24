@@ -1,4 +1,4 @@
-package me.jraynor.os.io
+package me.jraynor.io
 
 // Folder class to represent a folder in the filesystem.
 class Folder(name: String, owner: User, var content: MutableList<IOElement> = mutableListOf()) :

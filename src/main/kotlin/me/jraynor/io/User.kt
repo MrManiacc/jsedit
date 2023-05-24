@@ -1,4 +1,4 @@
-package me.jraynor.os.io
+package me.jraynor.io
 
 import java.io.Serializable
 

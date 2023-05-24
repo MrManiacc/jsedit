@@ -8,10 +8,10 @@ import me.jraynor.gui.helpers.Popups
 import me.jraynor.gui.helpers.Codicon
 import me.jraynor.gui.library.AbstractWindowElement
 import me.jraynor.gui.library.casted
-import me.jraynor.os.io.Disk
-import me.jraynor.os.io.IOElement
-import me.jraynor.os.io.File
-import me.jraynor.os.io.Folder
+import me.jraynor.io.Disk
+import me.jraynor.io.IOElement
+import me.jraynor.io.File
+import me.jraynor.io.Folder
 
 class DiskExplorerElement(private val disk: Disk, override val name: String = "Project View") :
     AbstractWindowElement() {

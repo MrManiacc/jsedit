@@ -1,19 +1,16 @@
 package me.jraynor.gui.elements
 
 import imgui.ImGui
-import imgui.ImGuiWindowClass
 import imgui.extension.texteditor.TextEditor
 import imgui.extension.texteditor.TextEditorLanguageDefinition
 import imgui.flag.ImGuiStyleVar
-import imgui.flag.ImGuiTabItemFlags
 import imgui.internal.flag.ImGuiDockNodeFlags
-import imgui.type.ImBoolean
 import imgui.type.ImInt
 import me.jraynor.gui.helpers.Codicon
 import me.jraynor.gui.helpers.SourceCodePro
 import me.jraynor.gui.library.AbstractRenderElement
 import me.jraynor.gui.library.AbstractWindowElement
-import me.jraynor.os.io.File
+import me.jraynor.io.File
 import me.jraynor.os.Events
 import org.graalvm.polyglot.PolyglotException
 import java.nio.charset.Charset

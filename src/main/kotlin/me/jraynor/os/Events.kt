@@ -1,7 +1,7 @@
 package me.jraynor.os
 
 import com.google.common.eventbus.EventBus
-import me.jraynor.os.io.Folder
+import me.jraynor.io.Folder
 import org.graalvm.polyglot.PolyglotException
 
 object Events {
@@ -34,9 +34,9 @@ object Events {
     }
 
     object File {
-        data class Renamed(val file: me.jraynor.os.io.File, val oldName: String)
+        data class Renamed(val file: me.jraynor.io.File, val oldName: String)
 
-        data class Moved(val from: Folder, val to: Folder, val file: me.jraynor.os.io.File)
+        data class Moved(val from: Folder, val to: Folder, val file: me.jraynor.io.File)
     }
 
 }

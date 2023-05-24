@@ -1,7 +1,7 @@
 package me.jraynor.os
 
-import me.jraynor.os.io.*
-import me.jraynor.os.vm.VirtualMachine
+import me.jraynor.io.*
+import me.jraynor.vm.VirtualMachine
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.PolyglotException
 import org.graalvm.polyglot.PolyglotException.StackFrame
@@ -52,24 +52,6 @@ class OperatingSystem(val disk: Disk) {
      */
     fun execute(source: Source): Throwable? = vm.execute(source)
 
-    /**
-     * Execute a given file and load it as the file name within the language asynchronously and return the future
-     */
-    fun executeAsync(cmd: String) =
-        executeAsync(Source.newBuilder("js", cmd, "<CLI>").mimeType("application/javascript+module").build())
-
-    /**
-     * Execute a given file and load it as the file name within the language asynchronously
-     */
-    fun executeAsync(source: Source) = vm.executeAsync(source)
-
-    /**
-     * Execute a given file and load it as the file name within the language asynchronously
-     */
-    fun executeAsync(file: File) = vm.executeAsync(
-        Source.newBuilder("js", String(file.content), file.name)
-            .mimeType("application/javascript+module").build()
-    )
 
 
     /**

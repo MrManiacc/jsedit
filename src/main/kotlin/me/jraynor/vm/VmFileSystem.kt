@@ -1,4 +1,4 @@
-package me.jraynor.os.vm
+package me.jraynor.vm
 
 import me.jraynor.os.OperatingSystem
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel

@@ -1,4 +1,4 @@
-package me.jraynor.os.io
+package me.jraynor.io
 
 abstract class IOElement(var name: String, var owner: User) {
     // Abstract method to get the size of the disk element.

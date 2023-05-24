@@ -1,4 +1,4 @@
-package me.jraynor.os.vm
+package me.jraynor.vm
 
 import org.graalvm.polyglot.Context
 import java.util.function.Predicate
@@ -6,9 +6,15 @@ import java.util.function.Predicate
 class Sandbox private constructor() {
     private val allowed: MutableSet<String> = hashSetOf()
     private val disallowed: MutableSet<String> = hashSetOf()
+    private val options: MutableMap<String, Any> = hashMapOf()
 
     class Builder {
         private val sandbox = Sandbox()
+
+        fun option(key: String, value: Any): Builder {
+            sandbox.options[key] = value
+            return this
+        }
 
         fun allow(pattern: String): Builder {
             sandbox.allowed.add(pattern)
@@ -30,7 +36,10 @@ class Sandbox private constructor() {
                     else className == pattern
                 }
             }
-            return contextBuilder.hostClassFilter(filter)
+            for ((key, value) in sandbox.options)
+                contextBuilder.option(key, value.toString())
+//            return contextBuilder.hostClassFilter(filter)
+            return contextBuilder
         }
     }
 }

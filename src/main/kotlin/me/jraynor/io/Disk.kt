@@ -1,4 +1,4 @@
-package me.jraynor.os.io
+package me.jraynor.io
 
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel
 import org.graalvm.polyglot.io.FileSystem

@@ -1,4 +1,4 @@
-package me.jraynor.os.io
+package me.jraynor.io
 
 enum class Role {
     USER, ADMIN
