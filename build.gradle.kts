@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.8.21"
     java
     application
 }
@@ -27,7 +27,6 @@ dependencies {
     implementation("org.graalvm.tools:lsp:22.3.2")
 // https://mvnrepository.com/artifact/org.graalvm.tools/lsp_api
     implementation("org.graalvm.tools:lsp_api:22.3.2")
-
 }
 
 

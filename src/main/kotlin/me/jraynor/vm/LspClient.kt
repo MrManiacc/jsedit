@@ -1,7 +1,9 @@
 package me.jraynor.vm
 
+import me.jraynor.services.TextDocumentService
 import java.io.*
 import java.net.Socket
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -111,7 +113,7 @@ class LspClient {
     @Throws(IOException::class)
     private fun writeMessageBytes(messageBytes: ByteArray) {
         val contentLength = messageBytes.size
-        val header = String.format(Locale.ENGLISH,"Content-Length: %d\r\n\r\n", contentLength)
+        val header = String.format(Locale.ENGLISH, "Content-Length: %d\r\n\r\n", contentLength)
         val headerBytes = header.toByteArray(StandardCharsets.US_ASCII)
         synchronized(out) {
             out.write(headerBytes)
@@ -168,10 +170,13 @@ class LspClient {
         @JvmStatic
         @Throws(Exception::class)
         fun main(args: Array<String>) {
-            val lspClient = LspClient()
-
-            lspClient.processMessages()
-            lspClient.close()
+            val service = TextDocumentService()
+            val didOpen = TextDocumentService.DidOpen("file:///system.js","function main() {console.log(\"hello world\"); }")
+            println(didOpen.toString())
+            //            val lspClient = LspClient()
+//
+//            lspClient.processMessages()
+//            lspClient.close()
         }
     }
 }
