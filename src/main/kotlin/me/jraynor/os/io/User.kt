@@ -1,6 +1,5 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
-import me.jraynor.os.disk.Role
 import java.io.Serializable
 
 // User class to represent a user of the filesystem.

@@ -1,8 +1,8 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
 // Folder class to represent a folder in the filesystem.
-class Folder(name: String, owner: User, var content: MutableList<DiskElement> = mutableListOf()) :
-    DiskElement(name, owner) {
+class Folder(name: String, owner: User, var content: MutableList<IOElement> = mutableListOf()) :
+    IOElement(name, owner) {
 
     constructor() : this("", User("root", Role.ADMIN))
 

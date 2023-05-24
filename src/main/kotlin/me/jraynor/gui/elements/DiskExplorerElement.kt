@@ -1,28 +1,29 @@
-package me.jraynor.gui.views
+package me.jraynor.gui.elements
 
 import imgui.ImGui
 import imgui.flag.*
 import imgui.type.ImInt
-import me.jraynor.gui.Codicon
-import me.jraynor.gui.Popups
-import me.jraynor.gui.Viewport
-import me.jraynor.os.*
-import me.jraynor.os.disk.DiskElement
-import me.jraynor.os.disk.File
-import me.jraynor.os.disk.Folder
+import me.jraynor.gui.helpers.Action
+import me.jraynor.gui.helpers.Popups
+import me.jraynor.gui.helpers.Codicon
+import me.jraynor.gui.library.AbstractWindowElement
+import me.jraynor.gui.library.casted
+import me.jraynor.os.io.Disk
+import me.jraynor.os.io.IOElement
+import me.jraynor.os.io.File
+import me.jraynor.os.io.Folder
 
-class Explorer(override val os: OperatingSystem) : Viewport {
+class DiskExplorerElement(private val disk: Disk, override val name: String = "Project View") :
+    AbstractWindowElement() {
     private var updated = false
     private var expandState = -1
 
-    /**
-     * Renders our main explorer window
-     */
-    override fun render() {
+
+    override fun onRender() {
         ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 0f, 0f)
         ImGui.pushStyleVar(ImGuiStyleVar.FramePadding, 0f, 0f)
-        renderFolder(os.disk.root)
-        renderHeader()
+        renderFolder(disk.root)
+//        renderHeader()
         ImGui.popStyleVar(2)
         if (updated) {
             updated = false
@@ -52,6 +53,54 @@ class Explorer(override val os: OperatingSystem) : Viewport {
         ImGui.setCursorPosY(ImGui.getCursorPosY() - 30f)
     }
 
+
+    private fun openFile(file: File) {
+        val dock = parent?.casted<DockspaceElement>() ?: return
+        if (dock.hasChild(file.name))
+            ImGui.setWindowFocus(file.name)
+        else
+            dock.addChild(CodeElement(file))
+
+    }
+
+    private fun renderFolderContext(folder: Folder) {
+        if (ImGui.beginPopupContextItem()) {
+            if (ImGui.menuItem("New File")) {
+                Popups.play(Action(disk, "new_file", folder))
+            }
+            ImGui.separator()
+            if (ImGui.menuItem("New Folder")) {
+                Popups.play(Action(disk, "new_folder", folder))
+            }
+            ImGui.separator()
+            if (ImGui.menuItem("Rename")) {
+                Popups.play(Action(disk, "rename", folder))
+            }
+            ImGui.separator()
+            if (ImGui.menuItem("Delete")) {
+                Popups.play(Action(disk, "delete", folder))
+            }
+            ImGui.endPopup()
+        }
+    }
+
+    private fun renderFileContext(file: File) {
+        if (ImGui.beginPopupContextItem()) {
+            if (ImGui.menuItem("Rename")) {
+                Popups.play(Action(disk, "rename", file))
+
+            }
+            ImGui.separator()
+            if (ImGui.menuItem("Delete")) {
+                Popups.play(Action(disk, "delete", file))
+            }
+            ImGui.endPopup()
+        }
+    }
+
+    /**
+     * renders a file
+     */
     private fun renderFile(file: File) {
         ImGui.indent(35f)
 
@@ -108,12 +157,12 @@ class Explorer(override val os: OperatingSystem) : Viewport {
 
         // Check if we are a target of a drag and drop operation
         if (ImGui.beginDragDropTarget()) {
-            var payload = ImGui.acceptDragDropPayload<DiskElement>("DND_FILE")
+            var payload = ImGui.acceptDragDropPayload<IOElement>("DND_FILE")
 
             if (payload != null) {
                 val file = payload as File
                 // Do something with the dropped file
-                os.disk.move(file, folder)
+                disk.move(file, folder)
             }
 
             payload = ImGui.acceptDragDropPayload("DND_FOLDER")
@@ -121,7 +170,7 @@ class Explorer(override val os: OperatingSystem) : Viewport {
             if (payload != null) {
                 val droppedFolder = payload as Folder
                 // Do something with the dropped folder
-                os.disk.move(
+                disk.move(
                     droppedFolder,
                     folder
                 )
@@ -143,61 +192,12 @@ class Explorer(override val os: OperatingSystem) : Viewport {
         }
     }
 
-
-    private fun openFile(file: File) {
-        val name = "${file.name} ${Codicon.ICON_FILE_TEXT}"
-        val view = (os.view.getViewport<TextEditor>(name))
-        if (view == null) {
-            val editor = TextEditor(os, file)
-            os.view.addViewport(editor)
-        } else {
-            view.updateFile(file)
-            ImGui.setWindowFocus(name)
-        }
-    }
-
-    private fun renderFolderContext(folder: Folder) {
-        if (ImGui.beginPopupContextItem()) {
-            if (ImGui.menuItem("New File")) {
-                Popups.play(Popups.Action(os.disk, "new_file", folder))
-            }
-            ImGui.separator()
-            if (ImGui.menuItem("New Folder")) {
-                Popups.play(Popups.Action(os.disk, "new_folder", folder))
-            }
-            ImGui.separator()
-            if (ImGui.menuItem("Rename")) {
-                Popups.play(Popups.Action(os.disk, "rename", folder))
-            }
-            ImGui.separator()
-            if (ImGui.menuItem("Delete")) {
-                Popups.play(Popups.Action(os.disk, "delete", folder))
-            }
-            ImGui.endPopup()
-        }
-    }
-
-    private fun renderFileContext(file: File) {
-        if (ImGui.beginPopupContextItem()) {
-            if (ImGui.menuItem("Rename")) {
-                Popups.play(Popups.Action(os.disk, "rename", file))
-
-            }
-            ImGui.separator()
-            if (ImGui.menuItem("Delete")) {
-                Popups.play(Popups.Action(os.disk, "delete", file))
-            }
-            ImGui.endPopup()
-        }
-    }
-
-
-    /**
-     * Creates a dock on the left side of the dockspace with a default size of 23%.
-     */
-    override fun buildDock(parentId: ImInt) {
+    override fun buildDock(dockspaceID: ImInt): ImInt {
         val dockLeft: Int =
-            imgui.internal.ImGui.dockBuilderSplitNode(parentId.get(), ImGuiDir.Left, 0.23f, null, parentId)
+            imgui.internal.ImGui.dockBuilderSplitNode(dockspaceID.get(), ImGuiDir.Left, 0.16f, null, dockspaceID)
         imgui.internal.ImGui.dockBuilderDockWindow(name, dockLeft)
+        return dockspaceID
     }
+
 }
+

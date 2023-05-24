@@ -4,15 +4,14 @@ import imgui.ImGui
 import imgui.ImGuiIO
 import imgui.app.Application
 import imgui.app.Configuration
-import imgui.flag.ImGuiCol
 import imgui.flag.ImGuiConfigFlags
-import me.jraynor.gui.FontAtlas
-import me.jraynor.gui.IRenderer
-import me.jraynor.gui.IStyle
+import me.jraynor.gui.helpers.FontAtlas
+import me.jraynor.gui.library.IRenderElement
+import me.jraynor.gui.helpers.IStyle
 import me.jraynor.os.OperatingSystem
 
 
-class Window(private val os: OperatingSystem, private val renderer: IRenderer, private val style: IStyle) : Application() {
+class Window(private val renderer: IRenderElement, private val style: IStyle) : Application() {
     override fun initImGui(config: Configuration?) {
         super.initImGui(config)
         val io: ImGuiIO = ImGui.getIO()
@@ -24,7 +23,6 @@ class Window(private val os: OperatingSystem, private val renderer: IRenderer, p
         style.apply(ImGui.getStyle())
         FontAtlas.configure(io)
     }
-
 
 
     override fun process() {

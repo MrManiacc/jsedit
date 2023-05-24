@@ -1,4 +1,4 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
 import java.time.LocalDateTime
 
@@ -10,7 +10,7 @@ class File(
     var lastRead: LocalDateTime,
     var lastWritten: LocalDateTime,
     var isRemoved: Boolean = false,
-) : DiskElement(name, owner) {
+) : IOElement(name, owner) {
 
     constructor() : this("", User("root", Role.ADMIN), ByteArray(0), LocalDateTime.now(), LocalDateTime.now())
 

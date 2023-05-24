@@ -1,6 +1,6 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
-abstract class DiskElement(var name: String, var owner: User) {
+abstract class IOElement(var name: String, var owner: User) {
     // Abstract method to get the size of the disk element.
 
     val nameWithoutExtension: String
@@ -11,7 +11,7 @@ abstract class DiskElement(var name: String, var owner: User) {
     abstract fun size(): Int
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is DiskElement) return false
+        if (other !is IOElement) return false
 
         if (name != other.name) return false
         return owner == other.owner

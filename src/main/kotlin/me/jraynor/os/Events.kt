@@ -1,8 +1,18 @@
-package me.jraynor.os.event
+package me.jraynor.os
 
+import com.google.common.eventbus.EventBus
+import me.jraynor.os.io.Folder
 import org.graalvm.polyglot.PolyglotException
 
 object Events {
+    private val globalBus = EventBus()
+
+
+    fun register(any: Any) = globalBus.register(any)
+
+    fun unregister(any: Any) = globalBus.unregister(any)
+
+    fun post(event: Any) = globalBus.post(event)
 
     object Console {
         enum class Level(val color: String) {
@@ -21,7 +31,12 @@ object Events {
         )
 
         data class Clear(val lastOnly: Boolean = false)
+    }
 
+    object File {
+        data class Renamed(val file: me.jraynor.os.io.File, val oldName: String)
+
+        data class Moved(val from: Folder, val to: Folder, val file: me.jraynor.os.io.File)
     }
 
 }

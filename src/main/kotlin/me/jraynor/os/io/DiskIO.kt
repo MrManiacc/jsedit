@@ -1,4 +1,4 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input

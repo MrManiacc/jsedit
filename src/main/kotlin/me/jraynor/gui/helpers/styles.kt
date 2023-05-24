@@ -1,4 +1,4 @@
-package me.jraynor.gui
+package me.jraynor.gui.helpers
 
 import imgui.ImGuiStyle
 import imgui.flag.ImGuiCol

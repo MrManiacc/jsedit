@@ -1,4 +1,4 @@
-package me.jraynor.os.disk
+package me.jraynor.os.io
 
 import org.apache.commons.compress.utils.SeekableInMemoryByteChannel
 import org.graalvm.polyglot.io.FileSystem
@@ -55,7 +55,7 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSyste
 
     // Print the structure of the filesystem starting from the root folder.
     fun printStructure() {
-        fun printElement(element: DiskElement, indent: String = "") {
+        fun printElement(element: IOElement, indent: String = "") {
             println("$indent${element.name}${if (element is File) "" else "/"}")
             if (element is Folder) {
                 element.content.forEach { printElement(it, "$indent  ") }
@@ -185,7 +185,7 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSyste
         return true
     }
 
-    fun delete(diskElement: DiskElement): Boolean {
+    fun delete(diskElement: IOElement): Boolean {
         val parentFolder = findParent(diskElement) ?: return false
         parentFolder.content.remove(diskElement)
         return true
@@ -255,7 +255,7 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSyste
         return true
     }
 
-    fun move(file: DiskElement, folder: Folder) {
+    fun move(file: IOElement, folder: Folder) {
         // Prevent moving a folder into its child
         if (file is Folder && isChildOf(file, folder)) {
             return
@@ -283,11 +283,11 @@ class Disk(val root: Folder = Folder("/", User("root", Role.ADMIN))) : FileSyste
         return false
     }
 
-    private fun findParent(file: DiskElement): Folder? {
+    private fun findParent(file: IOElement): Folder? {
         return findInFolder(root, file)
     }
 
-    private fun findInFolder(folder: Folder, file: DiskElement): Folder? {
+    private fun findInFolder(folder: Folder, file: IOElement): Folder? {
         if (folder.content.contains(file)) return folder
         folder.content.forEach {
             if (it is Folder) {

@@ -1,4 +1,4 @@
-package me.jraynor.gui
+package me.jraynor.gui.helpers
 
 import imgui.ImFont
 import imgui.ImFontConfig

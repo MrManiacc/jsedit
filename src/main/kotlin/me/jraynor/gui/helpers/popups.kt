@@ -1,11 +1,11 @@
-package me.jraynor.gui
+package me.jraynor.gui.helpers
 
 import imgui.ImColor
 import imgui.ImGui
 import imgui.ImVec2
 import imgui.flag.*
 import imgui.type.ImString
-import me.jraynor.os.disk.*
+import me.jraynor.os.io.*
 import java.time.LocalDateTime
 
 object Popups {
@@ -13,8 +13,9 @@ object Popups {
     private var min: ImVec2 = ImVec2()
     private var max: ImVec2 = ImVec2()
     private var wantsFocus = false
+
     fun play(action: Action) {
-        this.action = action
+        Popups.action = action
         if (action.name == "rename")
             action.nameStore.set(action.target.name)
         wantsFocus = true
@@ -87,6 +88,8 @@ object Popups {
         ImGui.unindent()
         ImGui.sameLine()
         if (ImGui.button("Rename")) {
+            val oldName =action!!.target.name
+
             action!!.target.name = action!!.nameStore.get()
             clearContext()
             ImGui.closeCurrentPopup()
@@ -144,7 +147,7 @@ object Popups {
         return false
     }
 
-    private fun createItem(title: String, itemCreator: () -> DiskElement) {
+    private fun createItem(title: String, itemCreator: () -> IOElement) {
         if (createHeader(title)) return
         ImGui.setCursorPosY(ImGui.getCursorPosY() + 5f)
         val folder = action!!.target as Folder
@@ -182,6 +185,6 @@ object Popups {
 
     }
 
-    data class Action(val disk: Disk, val name: String, val target: DiskElement, val nameStore: ImString = ImString())
 
 }
+data class Action(val disk: Disk, val name: String, val target: IOElement, val nameStore: ImString = ImString())
