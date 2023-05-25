@@ -17,7 +17,7 @@ import me.jraynor.gui.helpers.SourceCodePro
 import me.jraynor.gui.library.AbstractRenderElement
 import me.jraynor.gui.library.AbstractWindowElement
 import me.jraynor.os.Events
-import me.jraynor.os.fs.ConsoleStream
+import me.jraynor.gui.helpers.ConsoleStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -62,7 +62,6 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
     }
 
     override fun onRender() {
-
         ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 20f, 10f)
         ImGui.pushStyleVar(ImGuiStyleVar.ChildBorderSize, 10f)
         ImGui.pushStyleColor(ImGuiCol.ChildBg, 1.0f, 0.0f, 0.0f, 0.0f)
@@ -73,12 +72,6 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
         ImGui.spacing()
         ImGui.setCursorPosY(ImGui.getCursorPosY() -15f)
         if (ImGui.beginChild("Output", ImGui.getContentRegionAvailX(), (-ImGui.getFrameHeightWithSpacing()) - 5f, true, ImGuiWindowFlags.NoScrollbar)) {
-//            ImGui.pushItemWidth(250f)
-//            ImGui.inputText("##Filter", filter, ImGuiInputTextFlags.CallbackAlways)
-//            ImGui.sameLine()
-//            ImGui.setCursorPosX(ImGui.getCursorPosX() - 80f)
-//            ImGui.text("Filter ${Codicon.ICON_FILTER}")
-//            ImGui.indent()
             ImGui.pushStyleVar(ImGuiStyleVar.ItemSpacing, 0f, 1f)
             ConsoleStream.iterateLines { i, it ->
                 if (filter.get().isNotEmpty() && !it.contains(filter.get(), true))
@@ -148,18 +141,47 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
     }
     val spaceLeft get() = ImGui.getContentRegionAvailX()
 
+    var selectionStart = -1
+    var selectionEnd = -1
+    var cursorPos = -1
+
     fun textWithColors(tempStr: String) {
         val font = ImGui.getFont()
+        val drawList = ImGui.getWindowDrawList()
 
         var accumulated = ""
         var currentColor: ImVec4? = null
         var inColor = 0
 
-        val draw: (String) -> Unit = { str ->
+        val draw: (String, Int) -> Unit = { str, index ->
+            val startPosX = ImGui.getCursorPosX()
+            val startPosY = ImGui.getCursorPosY()
+
             if (currentColor == null)
                 ImGui.textUnformatted(str)
             else
                 ImGui.textColored(currentColor!!.x, currentColor!!.y, currentColor!!.z, currentColor!!.w, str)
+
+            val endPosX = ImGui.getCursorPosX()
+            val endPosY = ImGui.getCursorPosY()
+
+            // check if the string is within selection
+            if (index in selectionStart..selectionEnd) {
+                drawList.addRectFilled(startPosX, startPosY, endPosX, endPosY, ImGui.getColorU32(1.0f, 1.0f, 1.0f, 0.3f))
+            }
+        }
+
+        if (ImGui.isMouseClicked(0)) {
+            // Start new selection
+            selectionStart = ImGui.getMousePos().x.toInt()
+            selectionEnd = selectionStart
+            cursorPos = selectionStart
+        }
+
+        if (ImGui.isMouseDragging(0)) {
+            // Update end of selection
+            selectionEnd = ImGui.getMousePos().x.toInt()
+            cursorPos = selectionEnd
         }
 
         for (i in tempStr.indices) {
@@ -174,12 +196,12 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
                         val spaceLeft = spaceLeft
                         if (textSize.x > spaceLeft) {
                             val parts = splitToFit(accumulated, spaceLeft, font)
-                            parts.forEach {
-                                draw(it)
+                            parts.forEach { part ->
+                                draw(part, i - part.length)
                                 ImGui.newLine()
                             }
                         } else {
-                            draw(accumulated)
+                            draw(accumulated, i - accumulated.length + 1)
                             ImGui.sameLine()
                         }
                     }
@@ -195,25 +217,23 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
                 accumulated += char
             }
             if (i == tempStr.length - 1 && accumulated.isNotEmpty()) {
-
                 val textSize = font.calcTextSizeA(font.fontSize, Float.MAX_VALUE, Float.MAX_VALUE, accumulated)
                 val spaceLeft = spaceLeft
                 if (textSize.x > spaceLeft) {
                     val parts = splitToFit(accumulated, spaceLeft, font)
-                    parts.forEach {
-                        draw(it)
+                    parts.forEach { part ->
+                        draw(part, i - part.length)
                         ImGui.newLine()
                         ImGui.setCursorPosY(ImGui.getCursorPosY() - ImGui.getFontSize())
-
                     }
                 } else {
-                    draw(accumulated)
+                    draw(accumulated, i - accumulated.length + 1)
                     ImGui.sameLine()
                 }
             }
         }
-
     }
+
 
     fun splitToFit(str: String, maxWidth: Float, font: ImFont): List<String> {
         val words = str.split(" ")

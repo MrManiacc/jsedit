@@ -1,4 +1,4 @@
-package me.jraynor.os.fs
+package me.jraynor.fs
 
 /**
  * Represents a file in the workspace
@@ -33,8 +33,7 @@ open class File(
      * The location of the file in the workspace
      */
     var name: String = name
-        private set
-
+        internal set
     /**
      * The type of file this is (ex: kotlin, javascript, etc)
      */

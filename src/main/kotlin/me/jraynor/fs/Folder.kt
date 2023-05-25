@@ -1,4 +1,4 @@
-package me.jraynor.os.fs
+package me.jraynor.fs
 
 import java.io.PrintStream
 

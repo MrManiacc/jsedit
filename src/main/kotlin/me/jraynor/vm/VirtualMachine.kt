@@ -3,7 +3,7 @@ package me.jraynor.vm
 import me.jraynor.os.Events
 import me.jraynor.os.OperatingSystem
 import org.graalvm.polyglot.*
-import me.jraynor.os.fs.ConsoleStream
+import me.jraynor.gui.helpers.ConsoleStream
 
 
 class VirtualMachine(

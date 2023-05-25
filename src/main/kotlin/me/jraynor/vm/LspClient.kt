@@ -1,6 +1,5 @@
 package me.jraynor.vm
 
-import me.jraynor.services.TextDocumentService
 import java.io.*
 import java.net.Socket
 import java.net.URI
@@ -166,17 +165,5 @@ class LspClient {
         socket.close()
     }
 
-    companion object {
-        @JvmStatic
-        @Throws(Exception::class)
-        fun main(args: Array<String>) {
-            val service = TextDocumentService()
-            val didOpen = TextDocumentService.DidOpen("file:///system.js","function main() {console.log(\"hello world\"); }")
-            println(didOpen.toString())
-            //            val lspClient = LspClient()
-//
-//            lspClient.processMessages()
-//            lspClient.close()
-        }
+
     }
-}
