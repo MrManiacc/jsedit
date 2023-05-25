@@ -1,6 +1,7 @@
 package me.jraynor.os.fs
 
 import me.jraynor.os.fs.File.Companion.EMPTY
+import java.io.PrintStream
 
 /**
  * Represents a file system. This is the root of the file system tree and contains all the files and folders.
@@ -22,9 +23,9 @@ data class FileSystem(
      * Dumps the current file system out to printstream in a tree format
      *
      */
-    fun dump() {
-        println("Dumping file system: $name")
-        root.dump(0)
+    fun dump(stream: PrintStream = System.out){
+        stream.println("Dumping file system: $name `$description``")   // Prints the name and description
+        root.dump(stream)
     }
 
     /**

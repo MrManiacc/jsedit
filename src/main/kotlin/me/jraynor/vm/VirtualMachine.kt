@@ -3,10 +3,7 @@ package me.jraynor.vm
 import me.jraynor.os.Events
 import me.jraynor.os.OperatingSystem
 import org.graalvm.polyglot.*
-import org.graalvm.tools.lsp.instrument.EnvironmentProvider
-
-
-
+import me.jraynor.os.fs.ConsoleStream
 
 
 class VirtualMachine(
@@ -22,10 +19,6 @@ class VirtualMachine(
 ) {
     private val engine: Engine = Engine.newBuilder()
 //        .option(CoverageInstrument.ID, "true").option(CoverageInstrument.ID + ".PrintCoverage", "true")
-        .serverTransport { uri, peerEndpoint ->
-            println(uri)
-            peerEndpoint
-        }
         .option("lsp", "true")
         .allowExperimentalOptions(true)
         .build()
@@ -57,6 +50,7 @@ class VirtualMachine(
     private fun configureEnvironment(bindings: Value) {
         bindings.putMember("os", os)
         bindings.putMember("bus", Events)
+        bindings.putMember("out", ConsoleStream)
     }
 
 

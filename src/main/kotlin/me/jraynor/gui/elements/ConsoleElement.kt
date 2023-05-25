@@ -4,13 +4,11 @@ import com.google.common.eventbus.Subscribe
 import imgui.ImColor
 import imgui.ImFont
 import imgui.ImGui
-import imgui.ImVec2
 import imgui.ImVec4
 import imgui.flag.ImGuiCol
 import imgui.flag.ImGuiInputTextFlags
 import imgui.flag.ImGuiStyleVar
 import imgui.flag.ImGuiWindowFlags
-import imgui.internal.ImGuiWindow
 import imgui.internal.flag.ImGuiDockNodeFlags
 import imgui.type.ImInt
 import imgui.type.ImString
@@ -19,6 +17,7 @@ import me.jraynor.gui.helpers.SourceCodePro
 import me.jraynor.gui.library.AbstractRenderElement
 import me.jraynor.gui.library.AbstractWindowElement
 import me.jraynor.os.Events
+import me.jraynor.os.fs.ConsoleStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -26,12 +25,10 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
     private val command = ImString(100)
     private val filter = ImString(100)
     private var needsFocus = false
-    private val output = mutableListOf<String>()
-
     override fun onAdded(parent: AbstractRenderElement) {
         flag(
             ImGuiWindowFlags.NoTitleBar or
-                    ImGuiWindowFlags.NoCollapse
+                    ImGuiWindowFlags.NoCollapse or ImGuiWindowFlags.NoBackground or ImGuiWindowFlags.NoDecoration
         )
         Events.register(this)
     }
@@ -39,7 +36,6 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
     override fun onRemoved() {
         Events.unregister(this)
     }
-
 
     @Subscribe
     private fun print(event: Events.Console.Log) {
@@ -57,42 +53,38 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
         val level =
             if (event.level != Events.Console.Level.NONE) "\$ffffff[${event.level.color}${event.level.name}\$ffffff] " else " "
         val message = "\$a1aeb5${event.message}"
-        output.add("$level$prefix$caller$message")
+        ConsoleStream.println("$level$prefix$caller$message")
         needsFocus = true
     }
 
-
-    @Subscribe
-    private fun clear(event: Events.Console.Clear) {
-        if (event.lastOnly)
-            if (output.isNotEmpty()) output.removeAt(output.size - 1) else return
-        else output.clear()
-    }
 
     override fun preWindowRender() {
     }
 
     override fun onRender() {
-        ImGui.pushItemWidth(250f)
-        ImGui.inputText("##Filter", filter, ImGuiInputTextFlags.CallbackAlways)
-        ImGui.sameLine()
-        ImGui.setCursorPosX(ImGui.getCursorPosX() - 80f)
 
-        ImGui.text("Filter ${Codicon.ICON_FILTER}")
-        ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 20f, 20f)
-        ImGui.pushStyleVar(ImGuiStyleVar.ChildBorderSize, 20f)
+        ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 20f, 10f)
+        ImGui.pushStyleVar(ImGuiStyleVar.ChildBorderSize, 10f)
         ImGui.pushStyleColor(ImGuiCol.ChildBg, 1.0f, 0.0f, 0.0f, 0.0f)
+        ImGui.pushStyleColor(ImGuiCol.Border,  ImGui.getColorU32(ImGuiCol.WindowBg))
         ImGui.pushFont(SourceCodePro.getFont())
-        if (ImGui.beginChild("Output", 0f, (-ImGui.getFrameHeightWithSpacing()) - 5f)) {
-            ImGui.indent()
+        ImGui.pushStyleVar(ImGuiStyleVar.ChildRounding, 10f)
+        ImGui.pushStyleColor(ImGuiCol.ChildBg, 120, 120, 120, 255)
+        ImGui.spacing()
+        ImGui.setCursorPosY(ImGui.getCursorPosY() -15f)
+        if (ImGui.beginChild("Output", ImGui.getContentRegionAvailX(), (-ImGui.getFrameHeightWithSpacing()) - 5f, true, ImGuiWindowFlags.NoScrollbar)) {
+//            ImGui.pushItemWidth(250f)
+//            ImGui.inputText("##Filter", filter, ImGuiInputTextFlags.CallbackAlways)
+//            ImGui.sameLine()
+//            ImGui.setCursorPosX(ImGui.getCursorPosX() - 80f)
+//            ImGui.text("Filter ${Codicon.ICON_FILTER}")
+//            ImGui.indent()
             ImGui.pushStyleVar(ImGuiStyleVar.ItemSpacing, 0f, 1f)
-            output.forEach {
+            ConsoleStream.iterateLines { i, it ->
                 if (filter.get().isNotEmpty() && !it.contains(filter.get(), true))
-                    return@forEach
+                    return@iterateLines
                 textWithColors(it)
-                ImGui.pushStyleColor(ImGuiCol.Separator, ImGui.getColorU32(ImGuiCol.Border))
-                ImGui.separator()
-                ImGui.popStyleColor()
+                ImGui.dummy(0f, 0f)
             }
             ImGui.popStyleVar()
             ImGui.unindent()
@@ -102,18 +94,38 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
         }
         ImGui.endChild()
         ImGui.popFont()
-        ImGui.popStyleVar(2)
-        ImGui.popStyleColor()
+        ImGui.popStyleVar(3)
+        ImGui.popStyleColor(3)
+        //Draws a ronded rect around the input
+        ImGui.getWindowDrawList().addRectFilled(
+            ImGui.getCursorScreenPos().x - 20f,
+            ImGui.getCursorScreenPos().y - 8f,
+            ImGui.getCursorScreenPos().x + ImGui.getContentRegionAvailX() + 20f,
+            ImGui.getCursorScreenPos().y + ImGui.getFrameHeightWithSpacing() + 8f,
+            ImGui.getColorU32(ImGuiCol.WindowBg),
+            10f
+        )
         if (needsFocus) {
             ImGui.setKeyboardFocusHere()
             needsFocus = false
         }
+
+
+
+        ImGui.indent()
+        ImGui.textColored(ImColor.rgba(255, 255, 255, 255), "${Codicon.ICON_TERMINAL_POWERSHELL}")
+        ImGui.sameLine()
+        ImGui.pushStyleVar(ImGuiStyleVar.FrameRounding, 10f)
+        ImGui.pushStyleColor(ImGuiCol.FrameBg, ImGui.getColorU32(ImGuiCol.WindowBg))
         ImGui.pushItemWidth(ImGui.getContentRegionAvailX())
         if (ImGui.inputText("##Command", command, ImGuiInputTextFlags.EnterReturnsTrue)) {
             os?.execute(command.get())
             needsFocus = true
             command.set("")
         }
+        ImGui.popStyleColor()
+        ImGui.popStyleVar()
+
     }
 
     override fun onPostRender() {
@@ -134,11 +146,10 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
         }
         return color
     }
+    val spaceLeft get() = ImGui.getContentRegionAvailX()
 
     fun textWithColors(tempStr: String) {
-        val start = ImGui.getCursorStartPos()
         val font = ImGui.getFont()
-        val spaceLeft = ImGui.getContentRegionAvailX() - ImGui.getCursorPosX()
 
         var accumulated = ""
         var currentColor: ImVec4? = null
@@ -160,6 +171,7 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
                 } else {
                     if (accumulated.isNotEmpty()) {
                         val textSize = font.calcTextSizeA(font.fontSize, Float.MAX_VALUE, Float.MAX_VALUE, accumulated)
+                        val spaceLeft = spaceLeft
                         if (textSize.x > spaceLeft) {
                             val parts = splitToFit(accumulated, spaceLeft, font)
                             parts.forEach {
@@ -183,7 +195,9 @@ class ConsoleElement(override val name: String = "Console") : AbstractWindowElem
                 accumulated += char
             }
             if (i == tempStr.length - 1 && accumulated.isNotEmpty()) {
+
                 val textSize = font.calcTextSizeA(font.fontSize, Float.MAX_VALUE, Float.MAX_VALUE, accumulated)
+                val spaceLeft = spaceLeft
                 if (textSize.x > spaceLeft) {
                     val parts = splitToFit(accumulated, spaceLeft, font)
                     parts.forEach {

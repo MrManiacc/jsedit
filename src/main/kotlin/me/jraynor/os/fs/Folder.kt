@@ -1,5 +1,7 @@
 package me.jraynor.os.fs
 
+import java.io.PrintStream
+
 class Folder(location: String, val children: MutableSet<File>) : File(location, "folder", "", 0) {
 
     /**
@@ -37,17 +39,17 @@ class Folder(location: String, val children: MutableSet<File>) : File(location, 
         return children.find { if (includeExtension) it.name == name else it.nameWithoutExtension == name } ?: EMPTY
     }
 
-    fun dump(level: Int) {
-        if (level == 0) println("$name/")
-        println("|${"_".repeat(level)}$name/")
+    fun dump(out: PrintStream = System.out, level: Int = 0) {
+        if (level == 0) out.println("$name/")
+        out.println("|${"_".repeat(level)}$name/")
         for (child in children) {
             if (child !is Folder) {
-                println("|${"_".repeat(level + 3)}${child.name}")
+                out.println("|${"_".repeat(level + 3)}${child.name}")
             }
         }
         for (child in children) {
             if (child is Folder) {
-                child.dump(level + 3)
+                child.dump(out, level + 3)
             }
         }
     }
