@@ -72,3 +72,4 @@ For any queries, feel free to reach us at:
 
 ## Showcase
 ![JSEdit](assets/editor_new.png)
+    
