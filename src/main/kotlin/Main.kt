@@ -7,10 +7,9 @@ import me.jraynor.gui.helpers.*
 import me.jraynor.os.OperatingSystem
 import me.jraynor.io.Disk
 import me.jraynor.io.DiskIO
-import me.jraynor.fs.workspace.FileStore
 
 fun main(args: Array<String>) {
-    val fs = FileStore("fs", 0, "main fs")
+//    val fs = FileStore("fs", 0, "main fs")
 //    fs.addFile("/test/testing4/foo/faa", File("testing.js", "js", "console.log('hello world')", 0))
 //    fs.addFile("/test/testing4/", File("testing2.js", "js", "console.log('hello world2')", 0))
 //    fs.addFile("/test/testing4/", File("testing3.js", "js", "console.log('hello world2')", 0))
