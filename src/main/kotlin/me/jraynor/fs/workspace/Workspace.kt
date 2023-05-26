@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import me.jraynor.fs.FileStore
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream

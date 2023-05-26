@@ -7,7 +7,7 @@ import me.jraynor.gui.helpers.*
 import me.jraynor.os.OperatingSystem
 import me.jraynor.io.Disk
 import me.jraynor.io.DiskIO
-import me.jraynor.fs.FileStore
+import me.jraynor.fs.workspace.FileStore
 
 fun main(args: Array<String>) {
     val fs = FileStore("fs", 0, "main fs")

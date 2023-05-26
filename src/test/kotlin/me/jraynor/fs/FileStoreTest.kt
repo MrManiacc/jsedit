@@ -1,5 +1,7 @@
 package me.jraynor.fs
 
+import me.jraynor.fs.workspace.File
+import me.jraynor.fs.workspace.FileStore
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

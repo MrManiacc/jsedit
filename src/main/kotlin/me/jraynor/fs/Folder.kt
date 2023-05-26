@@ -1,5 +1,6 @@
 package me.jraynor.fs
 
+import me.jraynor.fs.workspace.File
 import java.io.PrintStream
 
 class Folder(location: String, val children: MutableSet<File>) : File(location, "folder", "", 0) {

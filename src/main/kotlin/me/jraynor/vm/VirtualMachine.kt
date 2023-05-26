@@ -19,13 +19,12 @@ class VirtualMachine(
 ) {
     private val engine: Engine = Engine.newBuilder()
 //        .option(CoverageInstrument.ID, "true").option(CoverageInstrument.ID + ".PrintCoverage", "true")
-        .option("lsp", "true")
+//        .option("lsp", "true")
         .allowExperimentalOptions(true)
         .build()
     init{
 //        val instrument = engine.instruments["lsp"]
 //        val envProvider = instrument!!.lookup(EnvironmentProvider::class.java)
-
     }
     private fun buildContext(): Context {
         val context = finalizeContext(Context.newBuilder("js"))
