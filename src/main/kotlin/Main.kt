@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
 //
 //    fs.removeFile("/test/testing4.js")
 //    fs.dump()
-    val os = OperatingSystem(if (java.io.File("os.dat").exists()) DiskIO.load("os.dat") else Disk())
+    val os = if(args.isNotEmpty()) OperatingSystem(DiskIO.load(args[0])) else OperatingSystem(if (java.io.File("os.dat").exists()) DiskIO.load("os.dat") else Disk())
     Runtime.getRuntime().addShutdownHook(Thread { os.shutdown() })
     FontAtlas.addFont(Futura)
     FontAtlas.addFont(Codicon)

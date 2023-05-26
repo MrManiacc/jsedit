@@ -71,5 +71,4 @@ For any queries, feel free to reach us at:
 - Email - `jamess.raynorr@gmail.com`
 
 ## Showcase
-
-![JSEdit](assets/editor.png)
+![JSEdit](assets/editor_new.png)
