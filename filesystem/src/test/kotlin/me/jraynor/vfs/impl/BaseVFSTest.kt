@@ -7,7 +7,7 @@ class BaseVFSTest {
     @Test
     fun `Test open returns valid VHandle`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: VFS = SysVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
         assertEquals(testPath, testHandle.reference.path)
     }
@@ -15,7 +15,7 @@ class BaseVFSTest {
     @Test
     fun `Test open and close VHandle`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: VFS = SysVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
         assertEquals(testPath, testHandle.reference.path)
         vfs.close(testHandle)
@@ -25,7 +25,7 @@ class BaseVFSTest {
     @Test
     fun `Test exception for access after closed`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: VFS = SysVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
         assertEquals(testPath, testHandle.reference.path)
         vfs.close(testHandle)
@@ -38,7 +38,7 @@ class BaseVFSTest {
     @Test
     fun `Test multiple handles against their references`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: VFS = SysVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
         val testHandleB = vfs.open(testPath)
         assertEquals(testHandleA.reference, testHandleB.reference)
@@ -48,7 +48,7 @@ class BaseVFSTest {
     @Test
     fun `Test handled closed and removed from cached handles`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: VFS = SysVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
         val testHandleB = vfs.open(testPath)
         assertTrue(vfs.lookup(testPath).contains(testHandleA))
@@ -61,7 +61,7 @@ class BaseVFSTest {
     @Test
     fun `Test the creation of the folder tree structure upon opening file`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: BaseVFS = SysVFS() // or whatever your implementation is
+        val vfs: BaseVFS = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
         assertNotNull(testHandleA.reference.parent)
         assertNotNull(vfs.find(testHandleA.reference.path.parent))
@@ -70,7 +70,7 @@ class BaseVFSTest {
 
     @Test
     fun `Test multiple files on filesystem dump`() {
-        val vfs: BaseVFS = SysVFS() // or whatever your implementation is
+        val vfs: BaseVFS = SystemVFS() // or whatever your implementation is
         vfs.open(VPath.of("/foo/bar/test.txt"))
         vfs.open(VPath.of("/foop/test2.txt"))
         vfs.open(VPath.of("/fool/doo/poo/test.txt"))
@@ -94,7 +94,7 @@ class BaseVFSTest {
 
     @Test
     fun `Testing propagation of VFile using propagateChildren`() {
-        val sys = SysVFS("/c/test/foo")
+        val sys = SystemVFS("/c")
         val path = VPath.of("C:\\test\\foo\\fan\\ase\\test.txt")
         val handle = sys.open(path, true)
         //Testing that a file is propagated to the root

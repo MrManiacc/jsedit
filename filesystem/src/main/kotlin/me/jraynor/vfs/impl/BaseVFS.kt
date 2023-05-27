@@ -1,7 +1,6 @@
 package me.jraynor.vfs.impl
 
 import me.jraynor.vfs.*
-import java.io.PrintStream
 
 /**
  * This is the base implementation of the VFS. This is the base class for all VFS implementations.
@@ -34,29 +33,20 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
     protected abstract fun fileAccessor(): FileAccessor
 
     /**
-     * Provides an implementation specific way to delete a file. This is used to delete a file from the file system.
-     * All fileHandles that are open to the file that is being deleted will be closed. And the cached file will be removed.
-     */
-    protected abstract fun deleteFile(path: VPath): Boolean
-
-    /**
-     * Provides an implementation specific way to move a file. This is used to move a file from one location to another.
-     *
-     * All fileHandles that are open to the file that is being moved will be closed. You must reopen the file handle if you wish
-     * by listening to the [VFSEvent.Type.MOVE] event.
-     *
-     *
-     * @param path the path to the file that is being moved.
-     * @param newPath the path to the new location of the file.
-     * @return true if the file was moved successfully, false otherwise.
-     */
-    protected abstract fun moveFile(path: VPath, newPath: VPath): Boolean
-
-    /**
      * Add a listener to the file system. This will allow the file system to notify the listener when a file is changed.
      */
     override fun addListener(listener: VFSListener): Boolean = subscribers.add(listener)
 
+    /**
+     * Indexes the file system. This will walk down each branch directory and open all files. to the file system.
+     * it will not open any handles, only index the files.
+     *
+     * @param path the path to the file that is being indexed.
+     * @param propagate if true, this will propagate recursively walk down each branch directory and open all files. to the file system.
+     */
+    override fun index(path: VPath) {
+        fileAccessor().index(path)
+    }
 
     /**
      * Expects the user to manage the file handle. You may not call open again to the same path without closing the file first.
@@ -68,11 +58,10 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * it will not open any handles, only index the files.
      */
     override fun open(path: VPath, propagate: Boolean): VHandle {
-        var currentFile =
-            if (cachedFiles.containsKey(path)) cachedFiles[path]!! else buildPathAndReturnParent(path)
+        var currentFile = if (cachedFiles.containsKey(path)) cachedFiles[path]!! else cache(path)
         //iterate up the tree until we reach the root.
-        while (currentFile.path.toPath() != root.path.toPath() && currentFile.path.path.isNotEmpty())
-            currentFile = buildPathAndReturnParent(currentFile.path)
+        while (currentFile.path.toPath() != root.path.toPath() && currentFile.path.path.isNotEmpty()) currentFile =
+            cache(currentFile.path)
         //At this point there should be a tree of files going from the root to that given path.
         val file = cachedFiles.getOrElse(path) { throw IllegalStateException("Failed to build path to file!") }
         val handlesForFile = cachedHandles.getOrPut(file) { hashSetOf() }
@@ -91,8 +80,7 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
 
     override fun lookup(path: VPath): List<VHandle> {
         val file = cachedFiles.getOrElse(path) { return emptyList() }
-        val handles =
-            cachedHandles.getOrElse(file) { return emptyList() }
+        val handles = cachedHandles.getOrElse(file) { return emptyList() }
         return handles.toList()
     }
 
@@ -109,8 +97,7 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
         handleForFile.remove(handle)
         handle.dispose()
         //Dispose of the file handle set if there are no more handles for that file.
-        if (handleForFile.isEmpty())
-            cachedHandles.remove(handle.reference)
+        if (handleForFile.isEmpty()) cachedHandles.remove(handle.reference)
         subscribers.forEach {
             it.onEvent(createEventFor(handle.reference, VFSEvent.Type.CLOSE))
         }
@@ -151,7 +138,7 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
     override fun delete(handle: VHandle): Boolean {
         if (!cachedFiles.containsKey(handle.reference.path)) throw IllegalStateException("Attempted to delete unindexed file!")
         if (cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to delete a file with open handles!")
-        val deleted = deleteFile(handle.reference.path)
+        val deleted = fileAccessor().delete(handle.reference.path)
         subscribers.forEach { it.onEvent(createEventFor(handle.reference, VFSEvent.Type.DELETE)) }
         return deleted
     }
@@ -171,7 +158,7 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
             "Attempted to move a file with a closed handle!"
         )
         val reference = handle.reference
-        val newFile = buildPathAndReturnParent(newPath)
+        val newFile = cache(newPath)
         val oldParent = reference.parent
         oldParent?.children?.remove(reference)
         newFile.children.add(reference)
@@ -190,28 +177,15 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
         TODO("Not yet implemented")
     }
 
-    private fun buildPathAndReturnParent(path: VPath): VFile {
-        if (path == this.path || path.path.isEmpty())
-            return root
-        val parent = createVFile(path.parent)
-        val file = createVFile(path)
+    protected fun cache(path: VPath): VFile {
+        if (path == this.path || path.path.isEmpty()) return root
+        val parent = createAndCache(path.parent)
+        val file = createAndCache(path)
         file.parent = parent
         parent.children.add(file)
-        propagateFile(file)
         return parent
     }
 
-    /**
-     * Recursively propagates the file system from the given path. This will create a file for each file in the file system.
-     * This will also create a file for each directory in the file system.
-     */
-    private fun propagateFile(file: VFile) {
-        val accessor = fileAccessor()
-        val children = accessor.propagateChildren(file.path)
-        for (child in children) {
-            buildPathAndReturnParent(child)
-        }
-    }
 
     /**
      * Creates an event for the given path and type. This will create an event for the given path and type.
@@ -225,12 +199,13 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * If the file already exists, it will be returned from the cache. Subscribers will be notified of the creation of the file.
      * @return the file for the given path.
      */
-    private fun createVFile(path: VPath): VFile {
+    protected fun createAndCache(path: VPath): VFile {
+        if (path == this.path) return root //If the path is the root, return the root. Don't send the create event or look up the file.
+        if (cachedFiles.containsKey(path)) return cachedFiles[path]!! //Don't send the create event if the file already exists  is cached.
+        // Create the file and cache it. Doesn't set the parent.
         val file = cachedFiles.getOrPut(path) { VFile(path, this) }
-        val event = createEventFor(file, VFSEvent.Type.CREATE)
-        subscribers.forEach {
-            it.onEvent(event)
-        }
+        //Notify subscribers of the creation of the file.
+        subscribers.forEach { it.onEvent(createEventFor(file, VFSEvent.Type.CREATE)) }
         return file
     }
 

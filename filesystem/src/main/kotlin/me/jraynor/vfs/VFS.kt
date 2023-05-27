@@ -11,6 +11,14 @@ interface VFS {
     val root: VFile
 
     /**
+     * Indexes the file system. This will walk down each branch directory and open all files. to the file system.
+     * it will not open any handles, only index the files.
+     *
+     * @param path the path to the file that is being indexed.
+     */
+    fun index(path: VPath)
+
+    /**
      * Expects the user to manage the file handle. You may not call open again to the same path without closing the file first.
      * This means that you must call [close] before calling open again to the same path. You must keep track of your handle
      * instead of using this method as a means of retrieve a handle to the file "on the fly".
