@@ -5,9 +5,15 @@ package me.jraynor.vfs
  * file system.
  */
 class VHandle(
-    val reference: VFile,
+    val handle: VFile,
     internal val accessor: FileAccessor,
 ) {
+    /**
+     * Each [VHandle] will store its own metadata. This is used to store any extra information about the file.
+     * This is like runtime information such as an input stream needed to read the file.
+     */
+    val meta = MetaData()
+
     //Internally track the disposal state of this handle. No R/W calls will be valid after this is disposed.
     var isClosed = false
         private set
@@ -16,20 +22,15 @@ class VHandle(
      * Reads the file and returns the data as a byte array.
      */
     fun read(): Document = if (!isClosed) Document(
-        reference,
-        accessor.read(reference)
+        this,
+        accessor.read(this)
     ) else throw IllegalStateException("Cannot read from a disposed file handle!")
 
 
-    /**
-     * Writes the given data to the file. This will overwrite the contents of the file.
-     */
-    fun write(document: Document) =
-        if (document.reference != reference)
-            throw IllegalArgumentException("Document file does not match the file handle!")
-        else if (isClosed)
-            throw IllegalStateException("Cannot write to a disposed file handle!")
-        else accessor.write(document.reference, document.data)
+
+    fun document(data: String) = Document(this, data.toByteArray())
+
+    fun document(data: ByteArray) = Document(this, data)
 
 
     /**
@@ -38,5 +39,56 @@ class VHandle(
     internal fun dispose() {
         isClosed = true
     }
+
+
+    /**
+     * MetaData is used to store any extra information about the file. This is used to store any extra information about the file.
+     *
+     */
+    class MetaData(private val properties: MutableMap<String, Any> = hashMapOf()) {
+        fun remove(key: String) = properties.remove(key)
+
+        operator fun contains(key: String) = properties.containsKey(key)
+        operator fun set(key: String, value: Any): Boolean {
+            if (properties.containsKey(key))
+                return false
+            properties[key] = value
+            return true
+        }
+
+        fun add(any: Any): Boolean {
+            if (properties.containsKey(any::class.qualifiedName))
+                return false
+            properties[any::class.qualifiedName!!] = any
+            return true
+        }
+
+        fun get(key: String): Any? = properties[key]
+
+        fun getString(key: String): String? = get(key) as? String
+
+        fun getBoolean(key: String): Boolean? = get(key) as? Boolean
+
+        fun getFloat(key: String): Float? = get(key) as? Float
+
+        fun getDouble(key: String): Double? = get(key) as? Double
+
+        fun getLong(key: String): Long? = get(key) as? Long
+
+        fun getInt(key: String): Int? = get(key) as? Int
+
+        fun getShort(key: String): Short? = get(key) as? Short
+
+        fun getByte(key: String): Byte? = get(key) as? Byte
+
+        fun getChar(key: String): Char? = get(key) as? Char
+
+        fun getArray(key: String): Array<*>? = get(key) as? Array<*>
+
+        inline fun <reified T> getAs(key: String): T? = get(key) as? T
+
+        inline fun <reified T> getAs(): T? = get(T::class.qualifiedName!!) as? T
+    }
+
 
 }

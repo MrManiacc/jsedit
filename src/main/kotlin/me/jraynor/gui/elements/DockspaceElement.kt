@@ -30,15 +30,16 @@ class DockspaceElement(override val os: OperatingSystem, private val dockspaceNa
     private fun preRender() {
         val size = ImGui.getIO().displaySize
         val viewport = ImGui.getMainViewport()
-        ImGui.setNextWindowPos(0f, 0f)
-        ImGui.setNextWindowSize(size.x, size.y)
+//        ImGui.setNextWindowPos(0f, 0f)
+//        ImGui.setNextWindowSize(size.x, size.y)
         ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 0f, 0f)
+        val flags = ImGuiWindowFlags.NoNavFocus or
+                ImGuiWindowFlags.NoTitleBar or
+                ImGuiWindowFlags.NoResize or
+                ImGuiWindowFlags.NoMove or
+                ImGuiWindowFlags.NoBringToFrontOnFocus
         ImGui.begin(
-            "Window##$dockspaceName", ImGuiWindowFlags.NoNavFocus or
-                    ImGuiWindowFlags.NoTitleBar or
-                    ImGuiWindowFlags.NoResize or
-                    ImGuiWindowFlags.NoMove or
-                    ImGuiWindowFlags.NoBringToFrontOnFocus
+            "Window##$dockspaceName"
         )
         ImGui.setNextWindowViewport(viewport.id)
         ImGui.popStyleVar()

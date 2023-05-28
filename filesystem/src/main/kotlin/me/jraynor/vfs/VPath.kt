@@ -6,17 +6,37 @@ import java.util.*
 /**
  * Represents a filesystem path. This is a file that is located in memory as serialized to a .dat file.
  */
-@Suppress("DataClassPrivateConstructor")
-data class VPath (val path: String, val scheme: String) {
+data class VPath(val path: String, val scheme: String) {
     /**
      * Gets teh parent of this path
      */
     val parent: VPath get() = VPath(computeParent(), scheme)
 
+    /**
+     * Checks if this path is a child of the given path
+     */
+    fun isChildOf(path: VPath): Boolean = normalizePath(this.path).startsWith(normalizePath(path.path))
+
+
+    fun normalize(root: VFile): VPath {
+        var path = root.path.path
+        if (!path.startsWith("/")) path = "/$path"
+        path = if (!this.path.startsWith(path)) {
+            if (!this.path.startsWith("/"))
+                "$path/${this.path}"
+            else
+                "$path${this.path}"
+        } else this.path
+        return VPath(normalizePath(path), scheme)
+    }
 
     private fun computeParent(): String {
-        if (!path.contains("/") || path == "/" || path == "") return path
+        if (!path.contains("/") && path.isNotEmpty() || (path == "/" || path == "")) return "/"
         return path.substringBeforeLast("/")
+    }
+
+    fun isChild(path: VPath): Boolean {
+        return this.path.startsWith(path.path)
     }
 
     fun toFile(): File =
@@ -56,7 +76,10 @@ data class VPath (val path: String, val scheme: String) {
             if (path.startsWith("/") && !path.contains(":")) return path
             val driveLetter = path.substringBefore(":").lowercase(Locale.getDefault())
             val withoutDriveLetter = path.substringAfter(":")
-            return "/$driveLetter" + withoutDriveLetter.replace("\\", "/").trim()
+            var output = "/$driveLetter" + withoutDriveLetter.replace("\\", "/")
+            output = output.replace("//", "").trim()
+            output = if (output.endsWith("/")) output.substring(0, output.length - 1) else output
+            return output
         }
 
         /**
@@ -78,3 +101,5 @@ data class VPath (val path: String, val scheme: String) {
 
 
 }
+
+val String.vpath: VPath get() = VPath.of(if (this.startsWith("/")) this else "/$this")

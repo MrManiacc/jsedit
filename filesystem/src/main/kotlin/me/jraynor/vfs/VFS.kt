@@ -16,7 +16,7 @@ interface VFS {
      *
      * @param path the path to the file that is being indexed.
      */
-    fun index(path: VPath)
+    fun index(path: VPath): List<VFile>
 
     /**
      * Expects the user to manage the file handle. You may not call open again to the same path without closing the file first.
@@ -42,6 +42,18 @@ interface VFS {
     fun lookup(path: VPath): List<VHandle>
 
     /**
+     * Finds a file in the cached memory. This will return a reference to the file if it exists.
+     * If the file doesn't exist, this will return null.
+     */
+    fun find(path: VPath): VFile?
+
+    /**
+     * Checks if the file exists in the file system.
+     * @return true if the file exists, false otherwise.
+     */
+    fun contains(path: VPath): Boolean
+
+    /**
      * Reads the contents of the file as a byte array.
      *
      * @return empty byte array if the file doesn't exist. The contents of the file otherwise.
@@ -53,7 +65,7 @@ interface VFS {
      * @return false if the file is read only, true otherwise.
      */
 
-    fun write(handle: VHandle, data: Document)
+    fun write(data: Document)
 
     /**
      * Deletes a file from the file system regardless of if it exists or not.

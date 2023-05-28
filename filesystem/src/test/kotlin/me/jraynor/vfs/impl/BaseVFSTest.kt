@@ -9,7 +9,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.reference.path)
+        assertEquals(testPath, testHandle.handle.path)
     }
 
     @Test
@@ -17,7 +17,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.reference.path)
+        assertEquals(testPath, testHandle.handle.path)
         vfs.close(testHandle)
         assertTrue(testHandle.isClosed)
     }
@@ -27,7 +27,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.reference.path)
+        assertEquals(testPath, testHandle.handle.path)
         vfs.close(testHandle)
         assertTrue(testHandle.isClosed)
         assertFailsWith<IllegalStateException> {
@@ -41,7 +41,7 @@ class BaseVFSTest {
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
         val testHandleB = vfs.open(testPath)
-        assertEquals(testHandleA.reference, testHandleB.reference)
+        assertEquals(testHandleA.handle, testHandleB.handle)
         assertNotEquals(testHandleA, testHandleB)
     }
 
@@ -61,16 +61,17 @@ class BaseVFSTest {
     @Test
     fun `Test the creation of the folder tree structure upon opening file`() {
         val testPath = VPath.of("/foo/bar/test.txt")
-        val vfs: BaseVFS = SystemVFS() // or whatever your implementation is
+        val vfs = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
-        assertNotNull(testHandleA.reference.parent)
-        assertNotNull(vfs.find(testHandleA.reference.path.parent))
+        assertNotNull(testHandleA.handle.parent)
+        assertNotNull(vfs.find(testHandleA.handle.path.parent))
         println(vfs.dump())
     }
 
+
     @Test
     fun `Test multiple files on filesystem dump`() {
-        val vfs: BaseVFS = SystemVFS() // or whatever your implementation is
+        val vfs: VFS = SystemVFS() // or whatever your implementation is
         vfs.open(VPath.of("/foo/bar/test.txt"))
         vfs.open(VPath.of("/foop/test2.txt"))
         vfs.open(VPath.of("/fool/doo/poo/test.txt"))
@@ -91,17 +92,5 @@ class BaseVFSTest {
         val path = VPath.of("C:\\test\\foo\\fan\\ase\\test.txt")
         assertEquals("/c/test/foo/fan/ase/test.txt", path.path)
     }
-
-    @Test
-    fun `Testing propagation of VFile using propagateChildren`() {
-        val sys = SystemVFS("/c")
-        val path = VPath.of("C:\\test\\foo\\fan\\ase\\test.txt")
-        val handle = sys.open(path, true)
-        //Testing that a file is propagated to the root
-        assertNotNull(sys.find(VPath.of("C:\\test\\foo\\fan\\vv.txt")))
-        assertNull(sys.find(VPath.of("C:\\test\\flop\\blah.zip")))
-//        assertNotNull(sys.lookup(VPath.of("C:\\test\\flop\\blah.zip")))
-    }
-
 
 }

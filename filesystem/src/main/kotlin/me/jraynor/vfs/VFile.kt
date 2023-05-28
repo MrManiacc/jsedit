@@ -7,10 +7,6 @@ package me.jraynor.vfs
  * doesn't need to exist for this to be created, it can virtually represent any file.
  */
 class VFile(path: VPath, val fs: VFS) {
-    /**
-     * Each [VFile] will store its own metadata. This is used to store any extra information about the file.
-     */
-    val meta = MetaData()
 
     /**
      * The path to the file. This is the path that is used to locate the file on the physical disk.
@@ -42,53 +38,33 @@ class VFile(path: VPath, val fs: VFS) {
     val extension: String
         get() = path.path.substringAfterLast(".")
 
+
     /**
-     * MetaData is used to store any extra information about the file. This is used to store any extra information about the file.
-     *
+     * Converts a canonical path to a normalized path using the current VFile as a reference.
+     * The function will lookup a file in a sibling's children.
      */
-    class MetaData(private val properties: MutableMap<String, Any> = hashMapOf()) {
+    fun canonicalLookup(canonicalPath: String): VFile? {
+        val parts = canonicalPath.split("/")
+        var referenceFile: VFile = this
+        for (part in parts)
+            when (part) {
+                "." -> {
+                    // stay at the same level
+                }
 
-        operator fun set(key: String, value: Any): Boolean {
-            if (properties.containsKey(key))
-                return false
-            properties[key] = value
-            return true
-        }
+                ".." -> {
+                    // go up one level
+                    referenceFile = referenceFile.parent ?: return null // null if trying to go above root
+                }
 
-        fun add(any: Any): Boolean {
-            if (properties.containsKey(any::class.qualifiedName))
-                return false
-            properties[any::class.qualifiedName!!] = any
-            return true
-        }
-
-        fun get(key: String): Any? = properties[key]
-
-        fun getString(key: String): String? = get(key) as? String
-
-        fun getBoolean(key: String): Boolean? = get(key) as? Boolean
-
-        fun getFloat(key: String): Float? = get(key) as? Float
-
-        fun getDouble(key: String): Double? = get(key) as? Double
-
-        fun getLong(key: String): Long? = get(key) as? Long
-
-        fun getInt(key: String): Int? = get(key) as? Int
-
-        fun getShort(key: String): Short? = get(key) as? Short
-
-        fun getByte(key: String): Byte? = get(key) as? Byte
-
-        fun getChar(key: String): Char? = get(key) as? Char
-
-        fun getArray(key: String): Array<*>? = get(key) as? Array<*>
-
-        inline fun <reified T> getAs(key: String): T? = get(key) as? T
-
-        inline fun <reified T> getAs(): T? = get(T::class.qualifiedName!!) as? T
+                else -> {
+                    // find a child by name
+                    referenceFile = referenceFile.children.find { it.name == part }
+                        ?: return null // null if no child with such name found
+                }
+            }
+        return referenceFile
     }
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -105,9 +81,16 @@ class VFile(path: VPath, val fs: VFS) {
         return result
     }
 
-    internal fun dump(builder: StringBuilder, i: Int) {
-        builder.append("\t".repeat(i)).append(path).append("\n")
-        children.forEach { it.dump(builder, i + 1) }
+
+    internal fun dump(builder: StringBuilder, prefix: String = "", isTail: Boolean = true) {
+        builder.append(prefix).append(if (isTail) "└── " else "├── ").append(name).append("\n")
+
+        val nextPrefix = prefix + if (isTail) "    " else "│   "
+        val it = children.iterator()
+        while (it.hasNext()) {
+            val child = it.next()
+            child.dump(builder, nextPrefix, !it.hasNext())
+        }
     }
 
 }

@@ -1,3 +1,3 @@
 rootProject.name = "jsedit"
 
-include(":filesystem")
+include(":filesystem", ":os")

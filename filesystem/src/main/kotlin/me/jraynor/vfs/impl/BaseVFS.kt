@@ -11,7 +11,7 @@ import me.jraynor.vfs.*
  * @param path the path to the root of the file system.
  * @see VFS
  */
-abstract class BaseVFS(protected val path: VPath) : VFS {
+abstract class BaseVFS<T : FileAccessor>(protected val path: VPath) : VFS {
     /**
      * The root of the file system. This is the root of the file system that is being abstracted.
      */
@@ -30,7 +30,7 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
     /**
      * Provides an implementation specific way to create a file accessor. This is used to read and write to the file.
      */
-    protected abstract fun fileAccessor(): FileAccessor
+    protected abstract val accessor: T
 
     /**
      * Add a listener to the file system. This will allow the file system to notify the listener when a file is changed.
@@ -44,28 +44,22 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * @param path the path to the file that is being indexed.
      * @param propagate if true, this will propagate recursively walk down each branch directory and open all files. to the file system.
      */
-    override fun index(path: VPath) {
-        fileAccessor().index(path)
-    }
+    override fun index(path: VPath): List<VFile> = accessor.index(path.normalize(root))
 
     /**
      * Expects the user to manage the file handle. You may not call open again to the same path without closing the file first.
      * This means that you must call [close] before calling open again to the same path. You must keep track of your handle
      * instead of using this method as a means of retrieve a handle to the file "on the fly".
      *
-     * @param path the path to the file that is being opened.
+     * @param pathIn the path to the file that is being opened.
      * @param propagate if true, this will propagate recursively walk down each branch directory and open all files. to the file system.
      * it will not open any handles, only index the files.
      */
-    override fun open(path: VPath, propagate: Boolean): VHandle {
-        var currentFile = if (cachedFiles.containsKey(path)) cachedFiles[path]!! else cache(path)
-        //iterate up the tree until we reach the root.
-        while (currentFile.path.toPath() != root.path.toPath() && currentFile.path.path.isNotEmpty()) currentFile =
-            cache(currentFile.path)
-        //At this point there should be a tree of files going from the root to that given path.
-        val file = cachedFiles.getOrElse(path) { throw IllegalStateException("Failed to build path to file!") }
+    override fun open(pathIn: VPath, propagate: Boolean): VHandle {
+        val path = pathIn.normalize(root)
+        val file = if (cachedFiles.containsKey(path)) cachedFiles[path]!! else cache(path)
         val handlesForFile = cachedHandles.getOrPut(file) { hashSetOf() }
-        val handle = VHandle(file, fileAccessor())
+        val handle = VHandle(file, accessor)
         handlesForFile.add(handle)
         subscribers.forEach {
             it.onEvent(createEventFor(file, VFSEvent.Type.OPEN))
@@ -76,10 +70,14 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
     /**
      * Used to locate a file within the file system. This will return null if the file does not exist.
      */
-    internal fun find(path: VPath): VFile? = cachedFiles[path]
+    override fun find(path: VPath): VFile? {
+        val normalized = path.normalize(root)
+        val file = cachedFiles[normalized]
+        return file
+    }
 
     override fun lookup(path: VPath): List<VHandle> {
-        val file = cachedFiles.getOrElse(path) { return emptyList() }
+        val file = cachedFiles.getOrElse(path.normalize(root)) { return emptyList() }
         val handles = cachedHandles.getOrElse(file) { return emptyList() }
         return handles.toList()
     }
@@ -89,17 +87,20 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * Closes a reference to the file. This will get rid of the in memory representation of the file and clear the cache.
      * This will not delete the physical file from the disk. Removes the reference to the file from the cache.
      *
+     * Children should override this to perform any handle specific cleanup such as closing meta input streams or closing any
+     * open file metadata.
      */
     override fun close(handle: VHandle) {
-        if (!cachedFiles.containsKey(handle.reference.path)) throw IllegalStateException("Attempted to close uncached file!")
-        if (!cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to close uncached handle!")
-        val handleForFile = cachedHandles[handle.reference]!!
-        handleForFile.remove(handle)
+        if (!cachedFiles.containsKey(handle.handle.path)) throw IllegalStateException("Attempted to close uncached file!")
+        if (!cachedHandles.containsKey(handle.handle)) throw IllegalStateException("Attempted to close uncached handle!")
+        val cachedHandleGroup = cachedHandles[handle.handle]!!
+        cachedHandleGroup.remove(handle)
         handle.dispose()
         //Dispose of the file handle set if there are no more handles for that file.
-        if (handleForFile.isEmpty()) cachedHandles.remove(handle.reference)
+        if (cachedHandleGroup.isEmpty()) cachedHandles.remove(handle.handle)
+        //Notify all subscribers that the file has been closed.
         subscribers.forEach {
-            it.onEvent(createEventFor(handle.reference, VFSEvent.Type.CLOSE))
+            it.onEvent(createEventFor(handle.handle, VFSEvent.Type.CLOSE))
         }
     }
 
@@ -109,10 +110,10 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * @return empty byte array if the file doesn't exist. The contents of the file otherwise.
      */
     override fun read(handle: VHandle): Document {
-        if (!cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to read a closed file!")
-        if (!cachedHandles[handle.reference]!!.contains(handle)) throw IllegalStateException("Attempted to read from a closed file handle!")
+        if (!cachedHandles.containsKey(handle.handle)) throw IllegalStateException("Attempted to read a closed file!")
+        if (!cachedHandles[handle.handle]!!.contains(handle)) throw IllegalStateException("Attempted to read from a closed file handle!")
         val read = handle.read()
-        subscribers.forEach { it.onEvent(createEventFor(handle.reference, VFSEvent.Type.READ)) }
+        subscribers.forEach { it.onEvent(createEventFor(handle.handle, VFSEvent.Type.READ)) }
         return read
     }
 
@@ -120,11 +121,12 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * Writes the contents of the file as a byte array. If the file doesn't exist, it will be created.
      * @return false if the file is read only, true otherwise.
      */
-    override fun write(handle: VHandle, data: Document) {
-        if (!cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to write to a closed file!")
-        if (!cachedHandles[handle.reference]!!.contains(handle)) throw IllegalStateException("Attempted to read from a closed file handle!")
-        handle.write(data)
-        subscribers.forEach { it.onEvent(createEventFor(handle.reference, VFSEvent.Type.WRITE)) }
+    override fun write(data: Document) {
+        val handle = data.ref
+        if (!cachedHandles.containsKey(handle.handle)) throw IllegalStateException("Attempted to write to a closed file!")
+        if (!cachedHandles[handle.handle]!!.contains(handle)) throw IllegalStateException("Attempted to read from a closed file handle!")
+        data.write()
+        subscribers.forEach { it.onEvent(createEventFor(handle.handle, VFSEvent.Type.WRITE)) }
     }
 
 
@@ -136,10 +138,10 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * @return true if the file was deleted, false otherwise.
      */
     override fun delete(handle: VHandle): Boolean {
-        if (!cachedFiles.containsKey(handle.reference.path)) throw IllegalStateException("Attempted to delete unindexed file!")
-        if (cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to delete a file with open handles!")
-        val deleted = fileAccessor().delete(handle.reference.path)
-        subscribers.forEach { it.onEvent(createEventFor(handle.reference, VFSEvent.Type.DELETE)) }
+        if (!cachedFiles.containsKey(handle.handle.path)) throw IllegalStateException("Attempted to delete unindexed file!")
+        if (cachedHandles.containsKey(handle.handle)) throw IllegalStateException("Attempted to delete a file with open handles!")
+        val deleted = accessor.delete(handle.handle.path)
+        subscribers.forEach { it.onEvent(createEventFor(handle.handle, VFSEvent.Type.DELETE)) }
         return deleted
     }
 
@@ -152,12 +154,12 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * @param newPath the new path to move the file to. Should be a directory not a new file name.
      */
     override fun move(handle: VHandle, newPath: VPath): Boolean {
-        if (!cachedFiles.containsKey(handle.reference.path)) throw IllegalStateException("Attempted to move unindexed file!")
-        if (!cachedHandles.containsKey(handle.reference)) throw IllegalStateException("Attempted to move a file with open handles!")
-        if (!cachedHandles[handle.reference]!!.contains(handle)) throw IllegalStateException(
+        if (!cachedFiles.containsKey(handle.handle.path)) throw IllegalStateException("Attempted to move unindexed file!")
+        if (!cachedHandles.containsKey(handle.handle)) throw IllegalStateException("Attempted to move a file with open handles!")
+        if (!cachedHandles[handle.handle]!!.contains(handle)) throw IllegalStateException(
             "Attempted to move a file with a closed handle!"
         )
-        val reference = handle.reference
+        val reference = handle.handle
         val newFile = cache(newPath)
         val oldParent = reference.parent
         oldParent?.children?.remove(reference)
@@ -179,11 +181,12 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
 
     protected fun cache(path: VPath): VFile {
         if (path == this.path || path.path.isEmpty()) return root
-        val parent = createAndCache(path.parent)
-        val file = createAndCache(path)
+        //recurse up the path creating and caching files as we go until we reach the root.
+        val parent = if (path.path == "/") root else cache(path.parent)
+        val file = getOrCache(path)
         file.parent = parent
         parent.children.add(file)
-        return parent
+        return file
     }
 
 
@@ -199,8 +202,8 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      * If the file already exists, it will be returned from the cache. Subscribers will be notified of the creation of the file.
      * @return the file for the given path.
      */
-    protected fun createAndCache(path: VPath): VFile {
-        if (path == this.path) return root //If the path is the root, return the root. Don't send the create event or look up the file.
+    private fun getOrCache(path: VPath): VFile {
+        if (path == this.path || path.path.isEmpty()) return root //If the path is the root, return the root. Don't send the create event or look up the file.
         if (cachedFiles.containsKey(path)) return cachedFiles[path]!! //Don't send the create event if the file already exists  is cached.
         // Create the file and cache it. Doesn't set the parent.
         val file = cachedFiles.getOrPut(path) { VFile(path, this) }
@@ -215,17 +218,20 @@ abstract class BaseVFS(protected val path: VPath) : VFS {
      */
     internal fun dump(): String {
         val builder = StringBuilder()
-        builder.appendLine("Dumping file system:")
-        builder.appendLine("Root: ${root.path}")
-        builder.appendLine("Files:")
-        root.dump(builder, 0)
-        builder.appendLine("Handles:")
-        cachedHandles.forEach { (file, handles) ->
-            builder.appendLine("\t${file.path}")
-            handles.forEach {
-                builder.appendLine("\t\t${it.accessor::class.simpleName}")
-            }
-        }
+//        builder.appendLine("Dumping file system:")
+//        builder.appendLine("Root: ${root.path}")
+//        builder.appendLine("Files:")
+
+        root.dump(builder)
+
+
+//        builder.appendLine("Handles:")
+//        cachedHandles.forEach { (file, handles) ->
+//            builder.appendLine("\t${file.path}")
+//            handles.forEach {
+//                builder.appendLine("\t\t${it.accessor::class.simpleName}")
+//            }
+//        }
         return builder.toString()
     }
 }
