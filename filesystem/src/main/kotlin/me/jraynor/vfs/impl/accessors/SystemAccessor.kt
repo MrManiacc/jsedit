@@ -5,11 +5,11 @@ import java.io.File
 
 class SystemAccessor(private val cache: (path: VPath) -> VFile) : FileAccessor {
     override fun read(file: VHandle): ByteArray {
-        return file.handle.path.toFile().readBytes()
+        return file.ref.path.toFile().readBytes()
     }
 
     override fun write(file: VHandle, data: ByteArray) {
-        file.handle.path.toFile().writeBytes(data)
+        file.ref.path.toFile().writeBytes(data)
     }
 
     /**

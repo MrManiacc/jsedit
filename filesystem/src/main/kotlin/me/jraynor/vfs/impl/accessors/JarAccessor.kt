@@ -19,7 +19,7 @@ class JarAccessor(private var file: File, private val cache: (path: VPath) -> VF
         if (file.isClosed) throw IllegalStateException("Cannot read from a closed file.")
         val stream =
             file.meta.getAs<InputStream>("stream")
-                ?: jarFile.getInputStream(jarFile.getJarEntry(file.handle.path.path))
+                ?: jarFile.getInputStream(jarFile.getJarEntry(file.ref.path.path))
         // cache the entry in the meta of the file
         file.meta["stream"] = stream
         // If the entry doesn't exist, return an empty byte array

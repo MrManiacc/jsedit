@@ -16,7 +16,7 @@ interface VFS {
      *
      * @param path the path to the file that is being indexed.
      */
-    fun index(path: VPath): List<VFile>
+    fun index(path: VPath = "/".vpath): List<VFile>
 
     /**
      * Expects the user to manage the file handle. You may not call open again to the same path without closing the file first.
@@ -28,6 +28,15 @@ interface VFS {
      * it will not open any handles, only index the files.
      */
     fun open(path: VPath, propagate: Boolean = true): VHandle
+
+    /**
+     * Should search cached memory for the file. If the file is not in the cache, this will return empty list.
+     * This will not search the physical file system only the cached files
+     *
+     * @param like the string to search for. Should be regex, will match first group.
+     * @param path the path to the file that is being searched.
+     */
+    fun search(like: String, path: VPath = "/".vpath): Set<VFile>
 
     /**
      * Closes a reference to the file. This will get rid of the in memory representation of the file and clear the cache.

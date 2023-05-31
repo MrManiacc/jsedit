@@ -1,8 +1,13 @@
 package me.jraynor.vfs.impl.accessors
 
 import me.jraynor.vfs.*
+import me.jraynor.vfs.impl.BinaryVFS
+import java.io.File
 
-class BinaryAccessor: FileAccessor {
+class BinaryAccessor(
+    private val documentCache: () -> BinaryVFS.FileDocumentCache,
+    private val cache: (VPath) -> VFile
+) : FileAccessor {
 
     /**
      * Reads the data from the file. This is used to read data from a file.
@@ -10,7 +15,9 @@ class BinaryAccessor: FileAccessor {
      * @return the data that was read from the file.
      */
     override fun read(file: VHandle): ByteArray {
-        TODO("Not yet implemented")
+        if (!documentCache().cachedDocuments.containsKey(file.ref))
+            return ByteArray(0)
+        return documentCache().cachedDocuments[file.ref]!!
     }
 
     /**
@@ -19,7 +26,7 @@ class BinaryAccessor: FileAccessor {
      * @param data the data to write to the file.
      */
     override fun write(file: VHandle, data: ByteArray) {
-        TODO("Not yet implemented")
+        documentCache().cachedDocuments[file.ref] = data
     }
 
     /**
@@ -37,7 +44,31 @@ class BinaryAccessor: FileAccessor {
      * @return a list of paths to the children of the directory.
      */
     override fun index(path: VPath): List<VFile> {
-        TODO("Not yet implemented")
+        val files = mutableListOf<VFile>()
+        for ((doc, _) in documentCache().cachedDocuments) {
+            if (path.isChild(doc.path)) {
+                indexHelper(doc, files)
+            }
+        }
+        return files
+    }
+
+    private fun indexHelper(file: VFile, files: MutableList<VFile>) {
+        if (file.children.isNotEmpty()) {
+            // list all files in this directory
+            val children = file.children
+            for (child in children) {
+                val vFile = cache(child.path)
+                files.add(vFile)
+                if (child.children.isNotEmpty()) {
+                    // if it's a directory, index its children
+                    indexHelper(child, files)
+                }
+            }
+        } else {
+            val vFile = cache(file.path)
+            files.add(vFile)
+        }
     }
 
     /**

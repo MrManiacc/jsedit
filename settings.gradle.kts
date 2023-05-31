@@ -1,3 +1,3 @@
 rootProject.name = "jsedit"
 
-include(":filesystem", ":os")
+include(":filesystem", ":os", ":guiapi")

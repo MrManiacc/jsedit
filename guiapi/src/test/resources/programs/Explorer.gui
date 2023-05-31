@@ -1,0 +1,6 @@
+<window id="Explorer">
+    <label text="Explorer"/>
+    <panel name="panel">
+        <button text="Button"/>
+    </panel>
+</window>

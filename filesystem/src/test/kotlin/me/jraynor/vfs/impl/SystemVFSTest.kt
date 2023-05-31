@@ -6,18 +6,20 @@ import me.jraynor.vfs.VPath
 import me.jraynor.vfs.vpath
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import java.net.URL
-import java.net.URLClassLoader
-import javax.print.DocFlavor
+import java.nio.file.Paths
 
 class SystemVFSTest {
     @Test
     fun `Test open returns valid VHandle`() {
-        val vfs = SystemVFS("C:\\Users\\jraynor\\IdeaProjects\\lua\\filesystem") // or whatever your implementation is
-        vfs.index("/".vpath)
-        val src = vfs.find("src/main/kotlin".vpath)
+        val path = VPath.of("../")
+        val vfs = SystemVFS(path)
+        val indexed = vfs.index(VPath.of("/"))
+        val project = vfs.find("../filesystem".vpath)
+        assertNotNull(project)
+        val src = project!!.canonicalLookup("src/main/kotlin/me/jraynor/vfs/impl")
         assertNotNull(src)
-        val resources = src!!.canonicalLookup("../../test/resources")
+        src?.dump()
+        val resources = src!!.canonicalLookup("../../../../../../test/resources")
         assertNotNull(resources)
         val jarFile = resources!!.canonicalLookup("chess.jar")
         assertNotNull(jarFile)
@@ -25,15 +27,7 @@ class SystemVFSTest {
         assertFalse(handle.isClosed)
         val jarVfs = JarVFS(jarFile.path)
         jarVfs.index(jarVfs.root.path)
-        val classLoader = VFSClassloader(jarVfs)
-        val clazz = classLoader.loadClass("MainKt")
-        try{
-           val main = clazz.methods.find { it.name == "main" }?.invoke(null)
 
-        }catch (ex: Exception){
-            ex.printStackTrace()
-        }
-        vfs.close(handle)
     }
 
 

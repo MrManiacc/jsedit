@@ -9,7 +9,7 @@ class JarVFSTest {
     fun `Indexes a jar file`() {
         val vfs: VFS =
 //            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
-            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
+            JarVFS(VPath.of("src/test/resources/untitled1-1.0-SNAPSHOT.jar"))
 
         val cached = vfs.index(vfs.root.path)
         assertNotNull(vfs.find(VPath("/helloworld.txt", "jar")))
@@ -19,7 +19,7 @@ class JarVFSTest {
     fun `reads the helloworld txt file from the base of the jar`() {
         val vfs: VFS =
 //            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
-            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
+            JarVFS(VPath.of("src/test/resources/untitled1-1.0-SNAPSHOT.jar"))
 
         vfs.index(vfs.root.path)
         val handle = vfs.open(VPath("/helloworld.txt", "jar"))
@@ -32,7 +32,7 @@ class JarVFSTest {
     fun `Test exception for access after closed`() {
         val vfs: VFS =
 //            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
-            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
+            JarVFS(VPath.of("src/test/resources/untitled1-1.0-SNAPSHOT.jar"))
 
         vfs.index(vfs.root.path)
         val handleA = vfs.open(VPath("/helloworld.txt", "jar"))
@@ -52,12 +52,12 @@ class JarVFSTest {
     @org.junit.jupiter.api.Test
     fun `Test multiple handles against their references`() {
         val vfs: VFS =
-            JarVFS(VPath.of("C:\\Users\\jraynor\\IdeaProjects\\untitled1\\build\\libs\\untitled1-1.0-SNAPSHOT.jar"))
+            JarVFS(VPath.of("src/test/resources/untitled1-1.0-SNAPSHOT.jar"))
 
         vfs.index(vfs.root.path)
         val handleA = vfs.open(VPath("/helloworld.txt", "jar"))
         val handleB = vfs.open(VPath("/helloworld.txt", "jar"))
-        assertEquals(handleA.handle, handleB.handle)
+        assertEquals(handleA.ref, handleB.ref)
         assertNotEquals(handleA, handleB)
         vfs.close(handleA)
         assertThrows(IllegalStateException::class.java) {

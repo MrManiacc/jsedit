@@ -1,6 +1,8 @@
 package me.jraynor.vfs
 
 import java.io.File
+import java.nio.file.NoSuchFileException
+import java.nio.file.Paths
 import java.util.*
 
 /**
@@ -13,10 +15,17 @@ data class VPath(val path: String, val scheme: String) {
     val parent: VPath get() = VPath(computeParent(), scheme)
 
     /**
+     * Gets the name of this path
+     */
+    val name: String = if (path == "/" || path == "") "/" else path.substringAfterLast("/")
+
+
+    operator fun div(path: String): VPath = child(path)
+
+    /**
      * Checks if this path is a child of the given path
      */
     fun isChildOf(path: VPath): Boolean = normalizePath(this.path).startsWith(normalizePath(path.path))
-
 
     fun normalize(root: VFile): VPath {
         var path = root.path.path
@@ -35,6 +44,11 @@ data class VPath(val path: String, val scheme: String) {
         return path.substringBeforeLast("/")
     }
 
+    /**
+     * Gets the child of this path with the given name
+     */
+    fun child(name: String): VPath = VPath.of("${this.path}/$name", scheme)
+
     fun isChild(path: VPath): Boolean {
         return this.path.startsWith(path.path)
     }
@@ -44,23 +58,36 @@ data class VPath(val path: String, val scheme: String) {
             path
         )
 
-    fun toPath(): String {
-        return "$scheme://$path"
-    }
 
     companion object {
         /**
          * Creates a new path from the given path
          */
-        fun of(path: String): VPath {
+        fun of(path: String, scheme: String = "file"): VPath {
             var normalizedPath = normalizePath(path.replace("//", "/"))
             if (normalizedPath.endsWith("/"))
                 normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1)
+            //if we're using the file system and the path doesn't start with a / then we need to resolve the path to the actual file
+            if (!path.startsWith("/") && scheme == "file") {
+                return try {
+                    of(
+                        normalizePath(Paths.get(path).toRealPath().toFile().path.toString().replace("\\", "/")),
+                        scheme
+                    )
+                    //Simply just don't care if the file doesn't exist. fuck it, we ball
+                } catch (e: NoSuchFileException) {
+                    of(
+                        normalizePath(e.file.toString().replace("\\", "/")),
+                        scheme
+                    )
+                }
+            }
+
             return VPath(
                 //Clean the scheme from the path if it exists
                 if (normalizedPath.contains("://")) normalizedPath.substringAfter("://") else normalizedPath,
                 //Take only the actual scheme from the path not including the ://
-                if (normalizedPath.contains("://")) normalizedPath.substringBefore("://") else "file"
+                if (normalizedPath.contains("://")) normalizedPath.substringBefore("://") else scheme
             )
         }
 
@@ -73,7 +100,9 @@ data class VPath(val path: String, val scheme: String) {
          * @return the normalized path
          */
         private fun normalizePath(path: String): String {
-            if (path.startsWith("/") && !path.contains(":")) return path
+            if (path.startsWith("/")) return path
+            if (!path.contains(":")) // this is a relative path. We want to use the Path.get() method to normalize it
+                return File(path).toPath().normalize().toString().replace("\\", "/")
             val driveLetter = path.substringBefore(":").lowercase(Locale.getDefault())
             val withoutDriveLetter = path.substringAfter(":")
             var output = "/$driveLetter" + withoutDriveLetter.replace("\\", "/")
@@ -102,4 +131,4 @@ data class VPath(val path: String, val scheme: String) {
 
 }
 
-val String.vpath: VPath get() = VPath.of(if (this.startsWith("/")) this else "/$this")
+val String.vpath: VPath get() = VPath.of(this)

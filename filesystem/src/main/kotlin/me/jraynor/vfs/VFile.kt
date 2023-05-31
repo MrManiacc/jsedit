@@ -6,13 +6,24 @@ package me.jraynor.vfs
  * it does not read or write to the file directly, that is done by the [VFS]. The file on the system path
  * doesn't need to exist for this to be created, it can virtually represent any file.
  */
-class VFile(path: VPath, val fs: VFS) {
-
+class VFile {
     /**
      * The path to the file. This is the path that is used to locate the file on the physical disk.
      */
-    var path: VPath = path
-        internal set
+    lateinit var path: VPath
+
+    /**
+     * The file system that this file is located in. This is the file system that is used to read and write to the file.
+     */
+    lateinit var fs: VFS
+
+
+    constructor(path: VPath, fs: VFS) {
+        this.path = path
+        this.fs = fs
+    }
+
+
 
     /**
      * The parent of this file. This is the file that contains this file. This is null if this is the root file.
@@ -30,7 +41,7 @@ class VFile(path: VPath, val fs: VFS) {
      * The handle to the file. This is used to read and write to the file.
      */
     val name: String
-        get() = path.path.substringAfterLast("/")
+        get() = path.name
 
     /**
      * The extension of the file. This is the extension of the file without the dot.
@@ -81,6 +92,11 @@ class VFile(path: VPath, val fs: VFS) {
         return result
     }
 
+    internal fun dump() {
+        val builder = StringBuilder()
+        dump(builder)
+        println(builder.toString())
+    }
 
     internal fun dump(builder: StringBuilder, prefix: String = "", isTail: Boolean = true) {
         builder.append(prefix).append(if (isTail) "└── " else "├── ").append(name).append("\n")

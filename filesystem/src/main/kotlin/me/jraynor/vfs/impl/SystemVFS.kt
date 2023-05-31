@@ -4,8 +4,9 @@ import me.jraynor.vfs.*
 import me.jraynor.vfs.impl.accessors.SystemAccessor
 import java.io.File
 
-class SystemVFS(basePath: String = "/") : BaseVFS<SystemAccessor>(VPath.of(basePath)) {
+class SystemVFS(path: VPath) : BaseVFS<SystemAccessor>(path) {
 
+    constructor(basePath: String = "/") : this(VPath.Companion.of(basePath))
     constructor(file: File) : this(file.absolutePath)
 
     /**

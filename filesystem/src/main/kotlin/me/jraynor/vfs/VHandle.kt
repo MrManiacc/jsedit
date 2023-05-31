@@ -5,7 +5,7 @@ package me.jraynor.vfs
  * file system.
  */
 class VHandle(
-    val handle: VFile,
+    val ref: VFile,
     internal val accessor: FileAccessor,
 ) {
     /**

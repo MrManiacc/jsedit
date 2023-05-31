@@ -9,7 +9,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.handle.path)
+        assertEquals(testPath, testHandle.ref.path)
     }
 
     @Test
@@ -17,7 +17,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.handle.path)
+        assertEquals(testPath, testHandle.ref.path)
         vfs.close(testHandle)
         assertTrue(testHandle.isClosed)
     }
@@ -27,7 +27,7 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandle = vfs.open(testPath) // use some VPath
-        assertEquals(testPath, testHandle.handle.path)
+        assertEquals(testPath, testHandle.ref.path)
         vfs.close(testHandle)
         assertTrue(testHandle.isClosed)
         assertFailsWith<IllegalStateException> {
@@ -41,7 +41,7 @@ class BaseVFSTest {
         val vfs: VFS = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
         val testHandleB = vfs.open(testPath)
-        assertEquals(testHandleA.handle, testHandleB.handle)
+        assertEquals(testHandleA.ref, testHandleB.ref)
         assertNotEquals(testHandleA, testHandleB)
     }
 
@@ -63,8 +63,8 @@ class BaseVFSTest {
         val testPath = VPath.of("/foo/bar/test.txt")
         val vfs = SystemVFS() // or whatever your implementation is
         val testHandleA = vfs.open(testPath)
-        assertNotNull(testHandleA.handle.parent)
-        assertNotNull(vfs.find(testHandleA.handle.path.parent))
+        assertNotNull(testHandleA.ref.parent)
+        assertNotNull(vfs.find(testHandleA.ref.path.parent))
         println(vfs.dump())
     }
 
